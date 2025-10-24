@@ -1,20 +1,28 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Main.java to edit this template
- */
+
 package agent_dba_pr2;
+
+import jade.core.Agent;
 
 /**
  *
  * @author duckduck
  */
-public class Agent_dba_pr2 {
+public class Agent_dba_pr2 extends Agent{
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String[] args) {
-        // TODO code application logic here
+    //Sensores
+    private int pos_x, pos_y;
+    private int goal_x, goal_y;
+    private int up, down, left, right;
+    
+    @Override
+    protected void setup(){
+        AgentBehavior b = new AgentBehavior();
+        
+        this.addBehaviour(b);
+    }
+    
+    public boolean hasFinished(){
+        return (pos_x == goal_x && pos_y == goal_y);
     }
     
 }
