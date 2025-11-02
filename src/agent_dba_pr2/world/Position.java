@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package agent_dba_pr2.world;
 
 /**
@@ -15,12 +11,22 @@ package agent_dba_pr2.world;
 public class Position {
     private final int x;
     private final int y;
+    private int value = 1; 
     
     public Position(int x, int y) {
         this.x = x;
         this.y = y;
     }
     
+
+    public void setValue(int value){
+        this.value = value;
+    }
+
+    public int getValue(){
+        return value;
+    }
+
     public int getX() {
         return x;
     }
@@ -67,6 +73,6 @@ public class Position {
     
     @Override
     public String toString() {
-        return "(" + x + ", " + y + ")";
+        return "(" + x + ", " + y + ")" + " | Value: "+value;
     }
 }
