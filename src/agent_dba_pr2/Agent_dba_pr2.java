@@ -1,6 +1,9 @@
 
 package agent_dba_pr2;
 
+
+import agent_dba_pr2.proxy.EnvironmentProxy;
+
 import jade.core.Agent;
 
 /**
@@ -17,18 +20,25 @@ public class Agent_dba_pr2 extends Agent{
     
     private boolean setup;
     
-    private EnvironmentProxy env;
+    private EnvironmentProxy proxy;
     
     
     @Override
     protected void setup(){
+
         AgentBehavior b = new AgentBehavior();
         
         this.addBehaviour(b);
+
+        EnvSetupBehaviour b2 = new EnvSetupBehaviour();
         
-        this env = new EnvironmentProxy()
-        
+        this.addBehaviour(b2);
+
         this.setup = false;
+    }
+
+    public void setProxy(EnvironmentProxy proxy) {
+        this.proxy = proxy;
     }
     
     public boolean hasFinished(){
