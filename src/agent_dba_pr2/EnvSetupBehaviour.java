@@ -1,8 +1,15 @@
 
 package agent_dba_pr2;
 
+import agent_dba_pr2.environment.Environment;
+import agent_dba_pr2.proxy.EnvironmentProxy;
+import agent_dba_pr2.world.Position;
+import agent_dba_pr2.world.World;
 import jade.core.behaviours.OneShotBehaviour;
+import java.io.IOException;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -25,7 +32,7 @@ public class EnvSetupBehaviour extends OneShotBehaviour{
     public void action(){
         System.out.println("Introduce la ruta del mapa: \n");
         scanner = new Scanner(System.in);
-        String mapa = scanner.nextLine();
+        this.mapa = scanner.nextLine();
         
         System.out.println("Introduce la pos X del agente: \n");
         int x = scanner.nextInt();
@@ -34,9 +41,13 @@ public class EnvSetupBehaviour extends OneShotBehaviour{
         
         this.pos = new Position(x, y);
         
-        this.world = World.loadFromFile(mapa);
+        try {
+            this.world = World.loadFromFile(mapa);
+        } catch (IOException ex) {
+            Logger.getLogger(EnvSetupBehaviour.class.getName()).log(Level.SEVERE, null, ex);
+        }
         
-        this.env = new Environment(world, pos)
+        this.env = new Environment(world, pos);
         agente.setProxy(new EnvironmentProxy(env));
     }
 }

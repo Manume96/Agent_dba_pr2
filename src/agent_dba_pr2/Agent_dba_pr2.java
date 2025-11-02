@@ -2,7 +2,9 @@
 package agent_dba_pr2;
 
 
+import agent_dba_pr2.environment.Surroundings;
 import agent_dba_pr2.proxy.EnvironmentProxy;
+import agent_dba_pr2.world.Position;
 
 import jade.core.Agent;
 
@@ -13,10 +15,12 @@ import jade.core.Agent;
 public class Agent_dba_pr2 extends Agent{
 
     //Sensores
-    private int pos_x, pos_y;
-    private int goal_x, goal_y;
-    private int up, down, left, right;
+    private Position pos;
+    private Position goal;
+    private Position up, down, left, right;
     private int energy;
+    
+    private Action action;
     
     private boolean setup;
     
@@ -42,31 +46,35 @@ public class Agent_dba_pr2 extends Agent{
     }
     
     public boolean hasFinished(){
-        return (pos_x == goal_x && pos_y == goal_y);
+        return (pos == goal);
     }
     
     public void perceive(){
+        
+        Surroundings surr = proxy.perceive();
+        
         if (!setup){
-            this.pos_x = 0;
-            this.pos_y = 0;
-            this.goal_x = 0;
-            this.goal_y = 0;
+            this.pos = proxy.getAgentPosition();
+            //this.goal = proxy.goal();
             this.energy = 0;
             
             this.setup = true;
         }
         
-        this.up = proxy.up;
-        this.down = proxy.down;
-        this.left = proxy.left;
-        this.right = proxy.right;
+        
+        this.up = surr.up;
+        this.down = surr.down;
+        this.left = surr.left;
+        this.right = surr.right;
     }
     
     public void think(){
         
+        
     }
     
     public void execute(){
-        
+        proxy.requestMove(this.action);
+        this.energy += 1;
     }
 }
