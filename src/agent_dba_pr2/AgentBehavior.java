@@ -17,17 +17,15 @@ public class AgentBehavior extends Behaviour{
     
     @Override
     public void action(){
-        /**********     EN COMENTARIOS PARA QUE NO DE ERROR MIENTRAS **********
-         * ********   NO HAYA IMPLEMENTACION DE LAS SIGUIENTES FUNCIONES ******
+              
          
-         
-        agente.percieve();
+        agente.perceive();
         
         agente.think();
         
         agente.execute();
         
-        */
+        
     }
     
     @Override
