@@ -30,7 +30,7 @@ public class Agent_dba_pr2 extends Agent{
     @Override
     protected void setup(){
 
-        AgentBehavior b = new AgentBehavior();
+        AgentBehaviour b = new AgentBehaviour();
         
         this.addBehaviour(b);
 
@@ -69,8 +69,46 @@ public class Agent_dba_pr2 extends Agent{
     }
     
     public void think(){
+        int mejor = Integer.MAX_VALUE;
+        Action mejorAccion = null;
         
-        
+        if (goal == null) {
+            this.action = null;
+            return;
+        }
+
+        if (up != null && up.getValue() != -1) {
+            int h = up.manhattanDistance(goal);
+            if (h < mejor) {
+                mejor = h;
+                mejorAccion = Action.UP;
+            }
+        }
+
+        if (down != null && down.getValue() != -1) {
+            int h = down.manhattanDistance(goal);
+            if (h < mejor) {
+                mejor = h;
+                mejorAccion = Action.DOWN;
+            }
+        }
+
+        if (left != null && left.getValue() != -1) {
+            int h = left.manhattanDistance(goal);
+            if (h < mejor) {
+                mejor = h;
+                mejorAccion = Action.LEFT;
+            }
+        }
+
+        if (right != null && right.getValue() != -1) {
+            int h = right.manhattanDistance(goal);
+            if (h < mejor) {
+                mejor = h;
+                mejorAccion = Action.RIGHT;
+            }
+        }
+        this.action = mejorAccion;
     }
     
     public void execute(){
