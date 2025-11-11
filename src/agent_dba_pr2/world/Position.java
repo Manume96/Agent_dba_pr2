@@ -66,9 +66,15 @@ public class Position {
         return this.x == other.x && this.y == other.y;
     }
     
+    /*
     @Override
     public int hashCode() {
         return 31 * x + y;
+    }*/
+    
+    @Override
+    public int hashCode() {
+        return (x << 16) ^ y;
     }
     
     @Override
