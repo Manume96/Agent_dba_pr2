@@ -197,7 +197,7 @@ public class World {
     /**
      * Debug : print world + agent + goal
      */
-    public void printWorldWithAgentAndGoal(Position agentPos, Position goalPos) {
+/*    public void printWorldWithAgentAndGoal(Position agentPos, Position goalPos) {
         System.out.println("=== World completed ===");
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
@@ -215,7 +215,27 @@ public class World {
         }
         System.out.println("====================");
     }
+*/
+    public void printWorldWithAgentAndGoal(Position agentPos, Position goalPos) {
+    System.out.println("=== World ===");
+    for (int row = 0; row < grid.length; row++) {
+        for (int col = 0; col < grid[0].length; col++) {
+            if (agentPos.getX() == row && agentPos.getY() == col) {
+                System.out.print("A ");
+            } else if (goalPos.getX() == row && goalPos.getY() == col) {
+                System.out.print("G ");
+            } else if (grid[row][col] == OBSTACLE_CELL) {
+                System.out.print("O ");
+            } else {
+                System.out.print(". ");
+            }
+        }
+        System.out.println();
+    }
+    System.out.println("====================");
+}
 
+    
     public Surroundings perceive(Position pos) {
         Surroundings s = new Surroundings(pos);
         s.up.setValue(getCell(s.up));
