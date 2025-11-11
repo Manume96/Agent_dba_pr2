@@ -1,8 +1,8 @@
 package agent_dba_pr2.environment;
-  
+
+import agent_dba_pr2.logger.Logger;
 import agent_dba_pr2.world.Position;
 import agent_dba_pr2.world.World;
-
 
 /**
  *
@@ -13,45 +13,53 @@ public class Environment {
     private final World world;
     
     private Position agentCurrPos;
-    
+    private Position goalPos;
+    private int spentEnergy;
     
     //OK
-    public Environment(World world,Position initialAgentPos){
+    public Environment(World world, Position initialAgentPos, Position goalPos) {
         this.world = world;
-         this.agentCurrPos = initialAgentPos;
-    };
+        this.agentCurrPos = initialAgentPos;
+        this.goalPos = goalPos;
+        this.spentEnergy = 0;
+        Logger.info("Estado inicial del entorno: Agente en " + agentCurrPos 
+                + ", Objetivo en " + goalPos + ", Energía gastada: " + spentEnergy);
+        
+        debug();
+    }
 
-    
     //OK
-    public Surroundings perceive(){
+    public Surroundings perceive() {
         Surroundings surs = world.perceive(this.agentCurrPos);
         return surs;
     }
 
     //OK
-    public Position getAgentPosition(){
+    public Position getAgentPosition() {
         return this.agentCurrPos;
     }
     
+    public Position getGoalPosition() {
+        return this.goalPos;
+    }
+
     //OK
-    public void updateAgentPosition(Position newPos){
+    public void updateAgentPosition(Position newPos) {
         this.agentCurrPos = newPos;
     }
 
-
-
-
-
-
-
-    public void moveTo(Position newPosition){
-        //Aqui verificar la decisión
-        System.out.println("Agente se ha movido");
+    public void moveTo(Position newPosition) {
+        Logger.info("Agente se ha movido a " + newPosition);
         this.agentCurrPos = newPosition;
-    };
-
-    public void debug(){
-        world.printWorldWithAgent(this.agentCurrPos);
+        this.spentEnergy += 1;
     }
-    
+
+    public void debug() {
+        Logger.info("Agente posición actual: " + agentCurrPos + " | Objetivo: " + goalPos + " | Energía gastada: " + spentEnergy);
+        world.printWorldWithAgentAndGoal(agentCurrPos, goalPos);
+    }
+
+    public int getSpentEnergy() {
+        return spentEnergy;
+    }
 }

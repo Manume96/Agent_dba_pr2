@@ -1,118 +1,71 @@
-
 package agent_dba_pr2;
 
-
-import agent_dba_pr2.environment.Surroundings;
+import agent_dba_pr2.environment.Environment;
 import agent_dba_pr2.proxy.EnvironmentProxy;
 import agent_dba_pr2.world.Position;
+import agent_dba_pr2.world.World;
 
 import jade.core.Agent;
+import jade.core.behaviours.OneShotBehaviour;
+import java.io.IOException;
+import java.util.Scanner;
 
-/**
- *
- * @author duckduck
- */
-public class Agent_dba_pr2 extends Agent{
+public class Agent_dba_pr2 extends Agent {
 
-    //Sensores
-    private Position pos;
-    private Position goal;
-    private Position up, down, left, right;
-    private int energy;
-    
-    private Action action;
-    
-    private boolean setup;
-    
-    private EnvironmentProxy proxy;
-    
-    
+    private Position initialPos;
+    private Position goalPos;
+
+    // Cosas del mundo
+    private World world;
+    private Environment environment;
+
     @Override
-    protected void setup(){
+    protected void setup() {
 
-        AgentBehaviour b = new AgentBehaviour();
-        
-        this.addBehaviour(b);
+        // OneShotBehaviour para inicializar el entorno y las posiciones
+        this.addBehaviour(new OneShotBehaviour() {
+            @Override
+            public void action() {
+                
+                /* Descomentar para que sea interactivo y comentar mapa,initialPos, goalPos que aparecen despues de este bloque
+                Scanner scanner = new Scanner(System.in);
 
-        EnvSetupBehaviour b2 = new EnvSetupBehaviour();
-        
-        this.addBehaviour(b2);
+                System.out.println("Introduce la ruta del mapa:");
+                String mapa = scanner.nextLine();
 
-        this.setup = false;
-    }
+                System.out.println("Introduce la posición inicial del agente (x y):");
+                int xInit = scanner.nextInt();
+                int yInit = scanner.nextInt();
+                initialPos = new Position(xInit, yInit);
 
-    public void setProxy(EnvironmentProxy proxy) {
-        this.proxy = proxy;
-    }
-    
-    public boolean hasFinished(){
-        return (pos == goal);
-    }
-    
-    public void perceive(){
-        
-        Surroundings surr = proxy.perceive();
-        
-        if (!setup){
-            this.pos = proxy.getAgentPosition();
-            //this.goal = proxy.goal();
-            this.energy = 0;
-            
-            this.setup = true;
-        }
-        
-        
-        this.up = surr.up;
-        this.down = surr.down;
-        this.left = surr.left;
-        this.right = surr.right;
-    }
-    
-    public void think(){
-        int mejor = Integer.MAX_VALUE;
-        Action mejorAccion = null;
-        
-        if (goal == null) {
-            this.action = null;
-            return;
-        }
+                System.out.println("Introduce la posición objetivo del agente (x y):");
+                int xGoal = scanner.nextInt();
+                int yGoal = scanner.nextInt();
+                goalPos = new Position(xGoal, yGoal);*/
+                
+                String mapa = "src/agent_dba_pr2/maps/mapWithVerticalWall.txt";
+                initialPos = new Position(0, 0);
+                goalPos = new Position(0, 5);
+                try {
+                    world = World.loadFromFile(mapa);
+                    environment = new Environment(world, initialPos,goalPos);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return;
+                }
 
-        if (up != null && up.getValue() != -1) {
-            int h = up.manhattanDistance(goal);
-            if (h < mejor) {
-                mejor = h;
-                mejorAccion = Action.UP;
+                System.out.println("Agente inicializado");
+
+                // Agregamos el comportamiento principal
+                /*Se añade aqui para asegurar ejecución secuencial y evitar usar booleanos de instancia para evaluar si se puede o no ejecutar el comportaminto
+                cosas de JADE*/
+                AgentBehaviour behaviour = new AgentBehaviour(
+                        Agent_dba_pr2.this,
+                        new EnvironmentProxy(environment)
+                );
+                addBehaviour(behaviour);
             }
-        }
+        });
 
-        if (down != null && down.getValue() != -1) {
-            int h = down.manhattanDistance(goal);
-            if (h < mejor) {
-                mejor = h;
-                mejorAccion = Action.DOWN;
-            }
-        }
-
-        if (left != null && left.getValue() != -1) {
-            int h = left.manhattanDistance(goal);
-            if (h < mejor) {
-                mejor = h;
-                mejorAccion = Action.LEFT;
-            }
-        }
-
-        if (right != null && right.getValue() != -1) {
-            int h = right.manhattanDistance(goal);
-            if (h < mejor) {
-                mejor = h;
-                mejorAccion = Action.RIGHT;
-            }
-        }
-        this.action = mejorAccion;
-    }
-    
-    public void execute(){
-        proxy.requestMove(this.action);
-        this.energy += 1;
     }
 }
