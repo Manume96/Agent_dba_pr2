@@ -43,9 +43,11 @@ public class Agent_dba_pr2 extends Agent {
                 int yGoal = scanner.nextInt();
                 goalPos = new Position(xGoal, yGoal);*/
                 
-                String mapa = "src/agent_dba_pr2/maps/mapWithVerticalWall.txt";
-                initialPos = new Position(0, 0);
-                goalPos = new Position(0, 5);
+                //String mapa = "src/agent_dba_pr2/maps/mapWithVerticalWall.txt";
+                //String mapa = "src/agent_dba_pr2/maps/mapWithHorizontalWall.txt";
+                String mapa = "src/agent_dba_pr2/maps/mapWithConvexObstacle.txt";
+                initialPos = new Position(3, 3);
+                goalPos = new Position(9, 9);
                 try {
                     world = World.loadFromFile(mapa);
                     environment = new Environment(world, initialPos,goalPos);

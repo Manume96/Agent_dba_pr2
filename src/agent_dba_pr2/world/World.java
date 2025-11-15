@@ -216,16 +216,35 @@ public class World {
         System.out.println("====================");
     }
 */
-    public void printWorldWithAgentAndGoal(Position agentPos, Position goalPos) {
+public void printWorldWithAgentAndGoal(Position agentPos, Position goalPos) {
+    final String RESET = "\u001B[0m";
+    final String GREEN = "\u001B[32;1m";
+    final String YELLOW = "\u001B[33;1m";
+    final String BLUE = "\u001B[36;1m";
+    final String RED = "\u001B[31;1m";
+
     System.out.println("=== World ===");
+
+    // Coordenadas del agente
+    int ax = agentPos.getX();
+    int ay = agentPos.getY();
+
     for (int row = 0; row < grid.length; row++) {
         for (int col = 0; col < grid[0].length; col++) {
+            boolean isAdjacent =
+                    (row == ax - 1 && col == ay) || // arriba
+                    (row == ax + 1 && col == ay) || // abajo
+                    (row == ax && col == ay - 1) || // izquierda
+                    (row == ax && col == ay + 1);   // derecha
+
             if (agentPos.getX() == row && agentPos.getY() == col) {
-                System.out.print("A ");
+                System.out.print(GREEN + "A " + RESET);
             } else if (goalPos.getX() == row && goalPos.getY() == col) {
-                System.out.print("G ");
+                System.out.print(YELLOW + "G " + RESET);
             } else if (grid[row][col] == OBSTACLE_CELL) {
-                System.out.print("O ");
+                System.out.print(RED + "O " + RESET);
+            } else if (isAdjacent) {
+                System.out.print(BLUE + ". " + RESET);
             } else {
                 System.out.print(". ");
             }
