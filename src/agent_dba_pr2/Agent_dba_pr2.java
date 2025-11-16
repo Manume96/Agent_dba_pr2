@@ -45,11 +45,25 @@ public class Agent_dba_pr2 extends Agent {
                 
                 //String mapa = "src/agent_dba_pr2/maps/mapWithVerticalWall.txt";
                 //String mapa = "src/agent_dba_pr2/maps/mapWithHorizontalWall.txt";
-                String mapa = "src/agent_dba_pr2/maps/mapWithConvexObstacle.txt";
-                initialPos = new Position(3, 3);
-                goalPos = new Position(9, 9);
+                //String mapa = "src/agent_dba_pr2/maps/mapWithConvexObstacle.txt";
+                //String mapa = "src/agent_dba_pr2/maps/mapWithoutObstacle.txt";
+                String mapa = "src/agent_dba_pr2/maps/mapWithDiagonalWall.txt";
+                //String mapa = "src/agent_dba_pr2/maps/mapWithConcaveObstacle.txt";
+                //String mapa = "src/agent_dba_pr2/maps/mapWithComplexObstacle3.txt";
+                //String mapa = "src/agent_dba_pr2/maps/mapWithComplexObstacle4.txt";
+
+                initialPos = new Position(9,9);
+                goalPos = new Position(0,9);
                 try {
                     world = World.loadFromFile(mapa);
+                    // Comprueba si la POSICIÓN INICIAL es válida (dentro de límites Y no un obstáculo)
+                    if (!world.isValidPosition(initialPos)) {
+                        throw new IllegalArgumentException("La posicion inicial " + initialPos + " no es valida (esta fuera del mapa o es un obstaculo).");
+                    }
+                    // Comprueba si la POSICIÓN OBJETIVO es válida
+                    if (!world.isValidPosition(goalPos)) {
+                        throw new IllegalArgumentException("La posicion objetivo " + goalPos + " no es valida (esta fuera del mapa o es un obstaculo).");
+                    }
                     environment = new Environment(world, initialPos,goalPos);
                 } catch (IOException e) {
                     e.printStackTrace();

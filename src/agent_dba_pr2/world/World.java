@@ -80,7 +80,7 @@ public class World {
             return false;
         }
         // obstacle
-        return grid[y][x] != OBSTACLE_CELL;
+        return grid[x][y] != OBSTACLE_CELL;
     }
 
     /**
@@ -123,7 +123,7 @@ public class World {
         if (!isInBounds(x, y)) {
             return true;
         }
-        return grid[y][x] == OBSTACLE_CELL;
+        return grid[x][y] == OBSTACLE_CELL;
     }
 
     /**
