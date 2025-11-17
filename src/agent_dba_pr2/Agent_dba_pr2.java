@@ -9,6 +9,7 @@ import jade.core.Agent;
 import jade.core.behaviours.OneShotBehaviour;
 import java.io.IOException;
 import java.util.Scanner;
+import agent_dba_pr2.environment.EnvironmentWithGUI;
 
 public class Agent_dba_pr2 extends Agent {
 
@@ -64,7 +65,9 @@ public class Agent_dba_pr2 extends Agent {
                     if (!world.isValidPosition(goalPos)) {
                         throw new IllegalArgumentException("La posicion objetivo " + goalPos + " no es valida (esta fuera del mapa o es un obstaculo).");
                     }
-                    environment = new Environment(world, initialPos,goalPos);
+                    // Opción de visualización por terminal o GUI
+                    //environment = new Environment(world, initialPos,goalPos);
+                    environment = new EnvironmentWithGUI(world, initialPos, goalPos);
                 } catch (IOException e) {
                     e.printStackTrace();
                     return;
