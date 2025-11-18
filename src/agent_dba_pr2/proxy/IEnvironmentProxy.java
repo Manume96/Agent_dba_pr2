@@ -11,6 +11,6 @@ public interface IEnvironmentProxy {
     boolean isValidMove(Action action);
     void requestMove(Action action);
     Position getAgentPosition();
-     Position getGoalPosition();
+    Position getGoalPosition();
     int getSpentEnergy();
 }

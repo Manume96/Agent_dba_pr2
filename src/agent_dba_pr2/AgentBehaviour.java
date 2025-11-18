@@ -60,7 +60,19 @@ public Action think(Surroundings surrs) {
         Logger.debug("Evaluando Acción: " + actions[i] + " | Pos: " + p);
 
         if (p.getValue() == 0) { // -2 = fuera del rango; -1 = obstáculo
+            
+            
             int visits = visited.getOrDefault(p, 0);
+            
+            // Heurística: sumar visitas de vecinos de p
+            Surroundings vecinosP = new Surroundings(p);
+            Position[] vecinos = {vecinosP.up, vecinosP.down, vecinosP.left, vecinosP.right};
+            for (Position v : vecinos) {
+                if (v != null) {
+                    visits += visited.getOrDefault(v, 0);
+                }
+            }
+
             int distManhattan = p.manhattanDistance(goal);
 
             int dx = goal.getX() - p.getX();
@@ -146,11 +158,11 @@ public Action think(Surroundings surrs) {
             Logger.warn("El agente no sabe qué hacer. Esperando...");
         }
 
-        try {
-            Thread.sleep(500);
+        /*try {
+            Thread.sleep(1500);
         } catch (InterruptedException e) {
             Logger.error("Interrupción durante el sleep"+e);
-        }
+        }*/
     }
 
     @Override
