@@ -44,18 +44,18 @@ public class Agent_dba_pr2 extends Agent {
                 int yGoal = scanner.nextInt();
                 goalPos = new Position(xGoal, yGoal);*/
                 
-                //String mapa = "src/agent_dba_pr2/maps/mapWithVerticalWall.txt";
-                //String mapa = "src/agent_dba_pr2/maps/mapWithHorizontalWall.txt";
+                //String mapa = "src/agent_dba_pr2/mapsDefensa/mapWithoutObstacle.txt";
+                String mapa = "src/agent_dba_pr2/mapsDefensa/mapComplex6.txt";
                 //String mapa = "src/agent_dba_pr2/maps/mapWithConvexObstacle.txt";
                 //String mapa = "src/agent_dba_pr2/maps/mapWithoutObstacle.txt";
                 //String mapa = "src/agent_dba_pr2/maps/mapWithDiagonalWall.txt";
                 //String mapa = "src/agent_dba_pr2/maps/mapWithConcaveObstacle.txt";
                 //String mapa = "src/agent_dba_pr2/maps/mapWithComplexObstacle3.txt";
                 //String mapa = "src/agent_dba_pr2/maps/mapWithComplexObstacle4.txt";
-                String mapa = "/home/duckduck/Agent_dba_pr2/mapsDefens/mapsDefensa/mapTriangleBig.txt";
+                //String mapa = "src/agent_dba_pr2/mapsDefensa/mapTriangleBig.txt";
 
-                initialPos = new Position(49,30);
-                goalPos = new Position(0,40);
+                initialPos = new Position(31,24);
+                goalPos = new Position(34, 25);
                 try {
                     world = World.loadFromFile(mapa);
                     // Comprueba si la POSICIÓN INICIAL es válida (dentro de límites Y no un obstáculo)
