@@ -15,7 +15,7 @@ import agent_dba_pr2.world.World;
 public class EnvironmentWithGUI extends Environment {
     
     private WorldGUI gui;
-    private static final int DELAY_MS = 500; 
+    private static final int DELAY_MS = 50; 
     private boolean guiInitialized = false;
     
     public EnvironmentWithGUI(World world, Position initialAgentPos, Position goalPos) {

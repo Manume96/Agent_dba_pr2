@@ -34,8 +34,8 @@ public class WorldGUI extends JFrame {
         pack();
         
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        int maxWidth = (int)(screenSize.width * 0.9);
-        int maxHeight = (int)(screenSize.height * 0.9);
+        int maxWidth = (int)(screenSize.width * 0.95);
+        int maxHeight = (int)(screenSize.height * 0.95);
         
         if (getWidth() > maxWidth || getHeight() > maxHeight) {
             setSize(Math.min(getWidth(), maxWidth), Math.min(getHeight(), maxHeight));
@@ -56,12 +56,6 @@ public class WorldGUI extends JFrame {
         scrollPane.getHorizontalScrollBar().setUnitIncrement(16);
         add(scrollPane, BorderLayout.CENTER);
         
-        // Information at the bottom
-        JPanel infoPanel = new JPanel(new GridLayout(2, 1, 5, 5));
-        infoPanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
-        infoPanel.add(energyLabel);
-        add(infoPanel, BorderLayout.SOUTH);
-        
         // Legend panel on the right side
         JPanel legendPanel = createLegendPanel();
         add(legendPanel, BorderLayout.EAST);
@@ -77,6 +71,7 @@ public class WorldGUI extends JFrame {
         panel.add(createLegendItem(Color.YELLOW, "Visited"));
         panel.add(createLegendItem(Color.BLUE, "Goal"));
         panel.add(createLegendItem(Color.GREEN, "Start"));
+        panel.add(energyLabel);
         
         return panel;
     }

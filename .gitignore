@@ -2,3 +2,5 @@
 /build/
 /dist/
 *.txt
+/nbproject/
+build.xml

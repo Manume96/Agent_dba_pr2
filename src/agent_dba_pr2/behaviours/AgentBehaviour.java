@@ -1,5 +1,7 @@
-package agent_dba_pr2;
+package agent_dba_pr2.behaviours;
 
+import agent_dba_pr2.Action;
+import agent_dba_pr2.AgentBrain;
 import agent_dba_pr2.environment.Surroundings;
 import agent_dba_pr2.proxy.EnvironmentProxy;
 import agent_dba_pr2.world.Position;
