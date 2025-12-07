@@ -40,7 +40,7 @@ public class Agent_dba_pr2 extends Agent {
     private void initializeWorld() {
         try {
             
-            String mapa = "src/agent_dba_pr2/maas-pr3/100x100-conObstaculos.txt";
+            String mapa = "maps/100x100-conObstaculos.txt";
             Position initialPos = new Position(50, 50);
             Position tempGoal = new Position(10, 10); 
             

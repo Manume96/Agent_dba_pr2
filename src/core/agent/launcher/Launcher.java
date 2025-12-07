@@ -1,30 +1,58 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package core.agent.launcher;
 
 import jade.core.Profile;
 import jade.core.ProfileImpl;
+import jade.core.Runtime;
 import jade.wrapper.AgentController;
 import jade.wrapper.ContainerController;
-import jade.Boot;
+import jade.wrapper.StaleProxyException;
+
+import core.agent.Agent_dba_pr2;
+import core.agent.SantaAgent;
+import core.agent.TranslatorAgent;
 
 public class Launcher {
 
     public static void main(String[] args) {
-        // On ignore complètement les arguments que NetBeans pourrait donner (dont -conf leap.properties)
-        // et on définit NOUS-MÊMES les arguments pour JADE.
+        // Obtener la instancia del runtime de JADE
+        Runtime rt = Runtime.instance();
 
-        String[] jadeArgs = new String[] {
-                "-gui",
-                "Santa:agent_dba_pr2.agents.SantaAgent;" +
-                "Translator:agent_dba_pr2.agents.TranslatorAgent;" +
-                "Agent:agent_dba_pr2.agents.Agent_dba_pr2"
-        };
+        // Parámetros del contenedor principal
+        String host = "localhost";
+        String containerName = "MainContainer";
 
-        
-        Boot.main(jadeArgs);
+        Profile profile = new ProfileImpl();
+        profile.setParameter(Profile.MAIN_HOST, host);
+        profile.setParameter(Profile.CONTAINER_NAME, containerName);
+        profile.setParameter(Profile.GUI, "true"); // abrir la interfaz gráfica
+
+        // Crear el contenedor principal
+        ContainerController mainContainer = rt.createMainContainer(profile);
+
+        try {
+            // Lanzar SantaAgent
+            AgentController santa = mainContainer.createNewAgent(
+                    "Santa",
+                    SantaAgent.class.getCanonicalName(),
+                    new Object[]{});
+            santa.start();
+
+            // Lanzar TranslatorAgent
+            AgentController translator = mainContainer.createNewAgent(
+                    "Translator",
+                    TranslatorAgent.class.getCanonicalName(),
+                    new Object[]{});
+            translator.start();
+
+            // Lanzar Agent_dba_pr2
+            AgentController agent = mainContainer.createNewAgent(
+                    "Agent",
+                    Agent_dba_pr2.class.getCanonicalName(),
+                    new Object[]{});
+            agent.start();
+
+        } catch (StaleProxyException e) {
+            e.printStackTrace();
+        }
     }
 }
-
