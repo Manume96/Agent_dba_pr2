@@ -1,30 +1,32 @@
 package core.agent;
 
-import core.environment.Environment;
+
 import core.proxy.EnvironmentProxy;
 import core.world.Position;
 import core.world.World;
 
 import jade.core.Agent;
-import jade.core.behaviours.OneShotBehaviour;
 import java.io.IOException;
-import java.util.Scanner;
 import core.environment.EnvironmentWithGUI;
 import jade.core.behaviours.SequentialBehaviour;
 import core.agent.behaviour.AgentAuthorizationBehaviour;
+import core.logger.Logger;
 
-public class Agent_dba_pr2 extends Agent {
+
+
+
+
+public class Agent_dba extends Agent {
     
+
     private String secretCode;
     private EnvironmentProxy envProxy;
     
     @Override
     protected void setup() {
-        System.out.println("\n=== Agent starting ===");
+        Logger.info("\n=== Agent starting ===");
         
-        // 1. Initialiser le monde ET la GUI dès le début
         initializeWorld();
-        
         // 2. Créer la séquence de comportements
         SequentialBehaviour sequence = new SequentialBehaviour();
         
@@ -33,7 +35,6 @@ public class Agent_dba_pr2 extends Agent {
         sequence.addSubBehaviour(authBehaviour);
         
         // Phase 2:
-        
         addBehaviour(sequence);
     }
     
@@ -48,7 +49,7 @@ public class Agent_dba_pr2 extends Agent {
             EnvironmentWithGUI environment = new EnvironmentWithGUI(world, initialPos, tempGoal);
             this.envProxy = new EnvironmentProxy(environment);
             
-            System.out.println("World initialized");
+            Logger.info("World initialized");
             
         } catch (IOException e) {
             System.err.println("Error loading world: " + e.getMessage());
@@ -58,6 +59,6 @@ public class Agent_dba_pr2 extends Agent {
     
     @Override
     protected void takeDown() {
-        System.out.println("\n=== Agent terminating ===");
+        Logger.info("\n=== Agent terminating ===");
     }
 }

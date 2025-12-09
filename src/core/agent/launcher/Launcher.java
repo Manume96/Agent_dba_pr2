@@ -7,7 +7,7 @@ import jade.wrapper.AgentController;
 import jade.wrapper.ContainerController;
 import jade.wrapper.StaleProxyException;
 
-import core.agent.Agent_dba_pr2;
+import core.agent.Agent_dba;
 import core.agent.SantaAgent;
 import core.agent.TranslatorAgent;
 
@@ -45,9 +45,8 @@ public class Launcher {
             translator.start();
 
             // Lanzar Agent_dba_pr2
-            AgentController agent = mainContainer.createNewAgent(
-                    "Agent",
-                    Agent_dba_pr2.class.getCanonicalName(),
+            AgentController agent = mainContainer.createNewAgent("Agent",
+                    Agent_dba.class.getCanonicalName(),
                     new Object[]{});
             agent.start();
 

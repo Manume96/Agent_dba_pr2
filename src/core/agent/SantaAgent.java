@@ -1,31 +1,34 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package core.agent;
+
+import core.agent.communication.ContentKeyword;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.lang.acl.ACLMessage;
 import core.agent.communication.MessageProtocol;
+import core.agent.communication.SantaMessageProtocol;
+import core.logger.Logger;
+import core.world.Position;
 import java.util.Random;
-
 
 public class SantaAgent extends Agent {
     
     private String secretCode;
+    private Position position = new Position(10,10);
+    MessageProtocol messageProtocol = new SantaMessageProtocol();
     
     @Override
     protected void setup() {
         secretCode = generateCode();
-        System.out.println("Santa ready");
+        Logger.info("Santa ready with code: " + secretCode);
+
         addBehaviour(new CyclicBehaviour() {
             @Override
             public void action() {
-                ACLMessage msg = receive();
+                ACLMessage msg = blockingReceive();
                 if (msg != null) {
                     handleMessage(msg);
                 } else {
-                    block();
+                    Logger.error("Something went wrong. No message received.");
                 }
             }
         });
@@ -36,44 +39,44 @@ public class SantaAgent extends Agent {
         return "CODE-" + (10000 + rand.nextInt(90000));
     }
     
-    private void handleMessage(ACLMessage msg) {
-        ACLMessage reply = msg.createReply();
-        
-        switch (msg.getPerformative()) {
-            case ACLMessage.PROPOSE:
-                // Authorization
-                if (new Random().nextDouble() < 0.8) {
-                    reply.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
-                    reply.setContent(MessageProtocol.createSantaResponse(MessageProtocol.createMessageWithCode(secretCode)));
-                    System.out.println("ACCEPTED");
-                } else {
-                    reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
-                    reply.setContent(MessageProtocol.createSantaResponse(MessageProtocol.NOT_TRUSTWORTHY));
-                    System.out.println("REJECTED");
-                }
-                send(reply);
-                break;
-                
-            case ACLMessage.QUERY_REF:
-                // Position request
-                int x = 10;
-                int y = 10;
-                reply.setPerformative(ACLMessage.INFORM);
-                reply.setContent(MessageProtocol.createSantaResponse(
-                    MessageProtocol.createPositionMessage(x, y)));
-                send(reply);
-                System.out.println("Position sent: (" + x + ", " + y + ")");
-                break;
-                
-            case ACLMessage.INFORM:
-                // Final arrival
-                if (msg.getContent().contains(MessageProtocol.I_ARRIVED)) {
-                    reply.setPerformative(ACLMessage.INFORM);
-                    reply.setContent(MessageProtocol.HO_HO_HO);
-                    send(reply);
-                    System.out.println("HoHoHo!");
-                }
-                break;
+   private void handleMessage(ACLMessage msg) {
+    ACLMessage reply = msg.createReply();
+
+    switch (msg.getPerformative()) {
+        case ACLMessage.PROPOSE -> handlePropose(msg, reply);
+        case ACLMessage.QUERY_REF -> handleQueryRef(msg, reply);
+        case ACLMessage.INFORM -> handleInform(msg, reply);
+        default -> Logger.warn("Performative not handled: " + msg.getPerformative());
+    }
+}
+
+    private void handlePropose(ACLMessage msg, ACLMessage reply) {
+        if (new Random().nextDouble() < 0.8) {
+            reply.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
+            reply.setContent(messageProtocol.createMessageBody(secretCode));
+            Logger.info("ACCEPTED");
+        } else {
+            reply.setPerformative(ACLMessage.REJECT_PROPOSAL);
+            reply.setContent(messageProtocol.createMessageBody("UNLUCKY"));
+            Logger.info("REJECTED");
+        }
+        send(reply);
+    }
+
+    private void handleQueryRef(ACLMessage msg, ACLMessage reply) {
+        String pString =  "Position:(" + position.getX() + "," + position.getY() + ")";
+        reply.setPerformative(ACLMessage.INFORM);
+        reply.setContent(messageProtocol.createMessageBody(pString));
+        send(reply);
+        Logger.info("Position sent: (" + position.getX() + ", " + position.getY() + ")");
+    }
+
+    private void handleInform(ACLMessage msg, ACLMessage reply) {
+        if (msg.getContent().contains(ContentKeyword.I_ARRIVED.getText())) {
+            reply.setPerformative(ACLMessage.INFORM);
+            reply.setContent(ContentKeyword.HO_HO_HO.getText());
+            send(reply);
+            Logger.info("HoHoHo!");
         }
     }
 }

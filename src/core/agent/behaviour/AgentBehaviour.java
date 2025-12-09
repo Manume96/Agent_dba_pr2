@@ -8,10 +8,20 @@ import core.world.Position;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
 import core.logger.Logger;
+import jade.lang.acl.ACLMessage;
 import java.util.HashMap;
 
 public class AgentBehaviour extends Behaviour implements AgentBrain {
     
+   private enum Phase {
+        AUTHORIZATION,
+        TRANSLATION,
+        SEARCH_GOAL,
+        REPORT,
+        FINISHED
+    }
+    
+    private Phase currentPhase;
     private final EnvironmentProxy proxy;
     private final HashMap<Position, Integer> visited;
 
@@ -19,15 +29,98 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
         super(agent);
         this.proxy = environmentProxy;
         this.visited = new HashMap<>();
+        this.currentPhase = Phase.AUTHORIZATION;
         Logger.info("Comportamiento construido");
     }
-
+    
+    
     @Override
     public void action() {
-        Surroundings surroundings = perceive();
-        Action action = think(surroundings);
-        execute(action);
+        switch (currentPhase) {
+            case AUTHORIZATION -> doAuthorizationPhase(); //El agente se presenta ante Santa
+            case TRANSLATION -> doTranslationPhase();//El agente habla con Elfo Traductor
+            case SEARCH_GOAL -> doSearch(); //El Agente habla con el Reno y busca objetivos
+            case REPORT -> doReportPhase();//El agente Avisa a santa
+            case FINISHED -> {
+                Logger.info("Agente ha terminado su misión. Cerrando...");
+                myAgent.doDelete();
+           }
+        }
     }
+
+private void doAuthorizationPhase() {
+    Logger.info("[AUTH] Fase de autorización iniciada.");
+
+    // 1. Agente solicita traducción al traductor
+    ACLMessage req = MessageProtocol.createMessage(
+        ACLMessage.REQUEST,
+        MessageProtocol.AGENT_TRANSLATOR,
+        "Bro me presento para ayudar en plan",
+        MessageProtocol.CONV_AUTHORIZATION
+    );
+
+    myAgent.send(req);
+    Logger.info("[AUTH] Solicitud de traducción enviada.");
+
+    // 2. Recibir traducción (bloquea hasta recibir algo)
+    ACLMessage translated = myAgent.blockingReceive(MessageProtocol.createTemplate(MessageProtocol.CONV_AUTHORIZATION));
+    String translatedText = translated.getContent();
+    Logger.info("[AUTH] Traducción recibida: " + translatedText);
+
+    // 3. Enviar PROPOSE a Santa con el mensaje traducido
+    ACLMessage propose = MessageProtocol.createMessage(
+        ACLMessage.PROPOSE,
+        MessageProtocol.AGENT_SANTA,
+        translatedText,
+        MessageProtocol.CONV_AUTHORIZATION
+    );
+    myAgent.send(propose);
+    Logger.info("[AUTH] PROPOSE enviado a Santa.");
+
+    // 4. Esperar respuesta de Santa (ACEPTA o RECHAZA)
+    ACLMessage santaReply = myAgent.blockingReceive(MessageProtocol.createTemplate(MessageProtocol.CONV_AUTHORIZATION));
+
+    if (santaReply.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
+        Logger.info("[AUTH] Aceptado por Santa.");
+        String code = MessageProtocol.extractCode(santaReply.getContent());
+        Logger.info("[AUTH] Código recibido: " + code);
+
+        currentPhase = Phase.TRANSLATION;
+
+    } else {
+        Logger.warn("[AUTH] Santa rechazó la propuesta.");
+        currentPhase = Phase.FINISHED;
+    }
+}
+
+    private void doTranslationPhase() {
+        // Proceso de traducción de mensajes de Santa <-> Agent
+        // Cuando la traducción esté lista y tengas el código:
+        // currentPhase = Phase.SEARCH_GOAL;
+        Logger.info("FASE: TRANSLATION");
+    }
+
+    private void doReportPhase() {
+        // 1. Pedir posición a Santa
+        // 2. Moverse hasta allí
+        // 3. Enviar mensaje "ya estoy aquí"
+        // 4. Esperar "HoHoHo!"
+        // 5. Cambiar estado a FINISHED
+        Logger.info("FASE: REPORT");
+    }
+    
+    private void doSearch(){
+        
+        Surroundings surroundings = perceive();
+                Action action = think(surroundings);
+                execute(action);
+
+                if (hasFinished()) {
+                    Logger.info("Objetivo alcanzado, cambiando a fase REPORT");
+                    currentPhase = Phase.REPORT;
+                }
+    }
+
 
     @Override
     public boolean done() {

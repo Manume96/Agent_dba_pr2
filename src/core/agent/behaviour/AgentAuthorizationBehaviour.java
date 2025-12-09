@@ -3,6 +3,7 @@ package core.agent.behaviour;
 import jade.core.behaviours.Behaviour;
 import jade.lang.acl.ACLMessage;
 import core.agent.communication.MessageProtocol;
+import core.logger.Logger;
 
 
 public class AgentAuthorizationBehaviour extends Behaviour {
@@ -47,8 +48,7 @@ public class AgentAuthorizationBehaviour extends Behaviour {
     }
     
     private void requestTranslation() {
-        System.out.println("\n ======PHASE 1 Starting ========");
-        
+        Logger.info("\n ======PHASE 1 Starting ========");
         String genZMessage = MessageProtocol.createGenZMessage(MessageProtocol.WANT_TO_HELP);
         
         ACLMessage msg = MessageProtocol.createMessage(
@@ -59,16 +59,15 @@ public class AgentAuthorizationBehaviour extends Behaviour {
         );
         
         myAgent.send(msg);
-        System.out.println("Agent to Translator: " + genZMessage);
+        Logger.info("Agent to Translator: " + genZMessage);
         currentState = State.WAIT_TRANSLATION;
     }
     
     private void waitForTranslation() {
         ACLMessage msg = myAgent.receive();
-        
         if (msg != null && msg.getConversationId().equals(MessageProtocol.CONV_AUTHORIZATION)) {
             String translated = MessageProtocol.extractTranslatedText(msg.getContent());
-            System.out.println("Translation: " + translated);
+            Logger.info("Translation: " + translated);
             
             lastSentMessage = new ACLMessage(ACLMessage.PROPOSE);
             lastSentMessage.setContent(translated);
@@ -87,7 +86,7 @@ public class AgentAuthorizationBehaviour extends Behaviour {
         );
         
         myAgent.send(msg);
-        System.out.println("Agent to Santa: proposal");
+        Logger.info("Agent to Santa: proposal");
         currentState = State.WAIT_SANTA_RESPONSE;
     }
     
@@ -111,7 +110,7 @@ public class AgentAuthorizationBehaviour extends Behaviour {
         );
         
         myAgent.send(msg);
-        System.out.println("Agent: Request translation");
+        Logger.info("Agent: Request translation");
         currentState = State.WAIT_RESPONSE_TRANSLATION;
     }
     
@@ -120,14 +119,14 @@ public class AgentAuthorizationBehaviour extends Behaviour {
         
         if (msg != null && msg.getConversationId().equals(MessageProtocol.CONV_AUTHORIZATION)) {
             String translated = MessageProtocol.extractTranslatedText(msg.getContent());
-            System.out.println("Translation: " + translated);
+            Logger.info("Translation: " + translated);
             
             if (lastSentMessage.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
                 secretCode = MessageProtocol.extractCode(translated);
-                System.out.println("AUTHORIZED! Code: " + secretCode);
+                Logger.info("AUTHORIZED! Code: " + secretCode);
                 
             } else {
-                System.out.println("REJECTED!");
+                Logger.info("REJECTED!");
                 myAgent.doDelete();
             }
             

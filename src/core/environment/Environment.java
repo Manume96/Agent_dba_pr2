@@ -56,7 +56,7 @@ public class Environment {
 
     public void debug() {
         Logger.info("Agente posición actual: " + agentCurrPos + " | Objetivo: " + goalPos + " | Energía gastada: " + spentEnergy);
-        world.printWorldWithAgentAndGoal(agentCurrPos, goalPos);
+        //world.printWorldWithAgentAndGoal(agentCurrPos, goalPos);
     }
 
     public int getSpentEnergy() {
