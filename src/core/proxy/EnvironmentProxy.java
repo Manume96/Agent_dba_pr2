@@ -108,6 +108,12 @@ public class EnvironmentProxy implements IEnvironmentProxy {
     }
 
     @Override
+    public void setGoalPosition(core.world.Position pos) {
+        env.setGoalPosition(pos);
+        Logger.info("Goal position updated via proxy to: " + pos);
+    }
+
+    @Override
     public int getSpentEnergy() {
         return env.getSpentEnergy();
     }

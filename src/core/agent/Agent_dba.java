@@ -8,8 +8,7 @@ import core.world.World;
 import jade.core.Agent;
 import java.io.IOException;
 import core.environment.EnvironmentWithGUI;
-import jade.core.behaviours.SequentialBehaviour;
-import core.agent.behaviour.AgentAuthorizationBehaviour;
+import core.agent.behaviour.AgentBehaviour;
 import core.logger.Logger;
 
 
@@ -27,15 +26,8 @@ public class Agent_dba extends Agent {
         Logger.info("\n=== Agent starting ===");
         
         initializeWorld();
-        // 2. Créer la séquence de comportements
-        SequentialBehaviour sequence = new SequentialBehaviour();
-        
-        // Phase 1: Authorization
-        AgentAuthorizationBehaviour authBehaviour = new AgentAuthorizationBehaviour();
-        sequence.addSubBehaviour(authBehaviour);
-        
-        // Phase 2:
-        addBehaviour(sequence);
+        AgentBehaviour behaviour = new AgentBehaviour(this, envProxy);
+        addBehaviour(behaviour);
     }
     
     private void initializeWorld() {

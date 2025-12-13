@@ -34,7 +34,31 @@ private static String getCallerMethodName() {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         String className = getCallerClassName();
         String methodName = getCallerMethodName();
-        System.out.println("[" + timestamp + "] [" + level + "] [" + className + "] [" + methodName + "] " + message);
+        String line = "[" + timestamp + "] [" + level + "] [" + className + "] [" + methodName + "] " + message;
+        String colored = applyColorForAgent(className, line);
+        System.out.println(colored);
+    }
+
+    private static String applyColorForAgent(String className, String line) {
+        final String RESET = "\u001B[0m";
+        final String GREEN = "\u001B[32m"; // Agent_DBA
+        final String RED = "\u001B[31m"; // Santa
+        final String BLUE = "\u001B[34m"; // Translator
+        final String MAGENTA = "\u001B[35m"; // Rudolph / other
+
+        if (className.contains("AgentBehaviour") || className.endsWith("Agent_dba")) {
+            return GREEN + line + RESET;
+        }
+        if (className.contains("SantaAgent") || className.endsWith("SantaAgent")) {
+            return RED + line + RESET;
+        }
+        if (className.contains("TranslatorAgent") || className.endsWith("TranslatorAgent")) {
+            return BLUE + line + RESET;
+        }
+        if (className.contains("RudolphAgent") || className.endsWith("RudolphAgent")) {
+            return MAGENTA + line + RESET;
+        }
+        return line;
     }
 
     // Métodos de conveniencia

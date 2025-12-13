@@ -23,11 +23,11 @@ public class TranslatorAgent extends Agent {
         public void action() {
             ACLMessage msg = blockingReceive();
             if (msg != null) {
-                Logger.info("\nTranslator received: " + msg.getContent());
+                Logger.info("Translator received: " + msg.getContent());
                 ACLMessage reply = ((TranslatorMessageProtocol) messageProtocol).createReplyMessage(msg);
                 send(reply);
 
-                Logger.info("Translation sent: " + reply.getContent() + "\n");
+                Logger.info("Translation sent: " + reply.getContent());
             } else {
                 block();
             }

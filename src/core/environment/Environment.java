@@ -43,6 +43,11 @@ public class Environment {
         return this.goalPos;
     }
 
+    public void setGoalPosition(Position goalPos) {
+        Logger.info("Environment goal changed from " + this.goalPos + " to " + goalPos);
+        this.goalPos = goalPos;
+    }
+
     //OK
     public void updateAgentPosition(Position newPos) {
         this.agentCurrPos = newPos;

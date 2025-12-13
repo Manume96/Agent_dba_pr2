@@ -12,5 +12,6 @@ public interface IEnvironmentProxy {
     void requestMove(Action action);
     Position getAgentPosition();
     Position getGoalPosition();
+    void setGoalPosition(core.world.Position pos);
     int getSpentEnergy();
 }
