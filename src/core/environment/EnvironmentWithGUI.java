@@ -67,4 +67,12 @@ public class EnvironmentWithGUI extends Environment {
             updateGUI();
         }
     }
+
+    @Override
+    public void setGoalPosition(core.world.Position newGoal) {
+        super.setGoalPosition(newGoal);
+        if (guiInitialized && gui != null) {
+            gui.updateGoalPosition(newGoal);
+        }
+    }
 }

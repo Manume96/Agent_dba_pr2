@@ -79,7 +79,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 msg.setConversationId(secretCode); // Esto es un parche para comprobar el código secreto
                 myAgent.send(msg);
                 Logger.info("Sent PROPOSE to Rudolph with convId=" + secretCode);
-                ++searchStep;// Pasamos al siguiente paso
+                searchStep=1;// Pasamos al siguiente paso
                 break;
 
             case 1: // recibir respuesta ACCEPT/REJECT de Rudolph
@@ -96,7 +96,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 } else {
                     Logger.warn("Unexpected message while waiting Rudolph accept/reject: " + msg);
                 }
-                ++searchStep;// Pasamos al siguiente paso
+                searchStep=2;// Pasamos al siguiente paso
                 break;
 
             case 2: // Realizar QUERY_REF sobre la posición del siguiente reno
@@ -106,7 +106,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 msg.setConversationId(secretCode);// Esto es un parche para comprobar el código secreto
                 myAgent.send(msg);
                 Logger.info("Sent QUERY_REF to Rudolph (convId=" + secretCode + ")");
-                ++searchStep;// Pasamos al siguiente paso
+                searchStep=3;// Pasamos al siguiente paso
                 break;
 
             case 3: // Recibir respuesta de Rudolph. Si posición -> Paso 4, si ALL_FOUND -> Paso 5
@@ -119,7 +119,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                             this.proxy.setGoalPosition(targetPosition);
                             Logger.info("Received Position object from Rudolph: " + targetPosition);
                             Logger.info("Starting movement loop towards " + targetPosition + " (placeholder)");
-                            ++searchStep;// Pasamos al siguiente paso
+                            searchStep=4;// Pasamos al siguiente paso
                         } else {
                             Logger.warn("Received non-Position object from Rudolph: "
                                     + (obj == null ? "null" : obj.getClass()));
@@ -142,7 +142,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                         searchStep = 0;
                         return;
                     }
-                    ++searchStep;// Pasamos al siguiente paso
+                    // searchStep ya se asignó explícitamente arriba
                 } else {
                     Logger.warn("Unexpected message while waiting Rudolph position: " + msg);
                     currentPhase = Phase.REPORT;
@@ -160,21 +160,22 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 searchStep = 6;
                 break;
             case 6: //Execute
-            searchStep = 0;
-                execute(nextAtion);
+                this.execute(nextAtion);
                 searchStep = 7;
                 break;
             
             case 7: // Check if goal reached
-             if (isGoalReached){
-                searchStep = 3; // Volver a pedir la posición del siguiente reno
-             }
-             break;
+                if (hasFinished()) {
+                    Logger.info("Reached target position of current reindeer: " + targetPosition);
+                    searchStep = 2; // Volver a pedir la posición del siguiente reno
+                } else {
+                    searchStep = 4; // Continuar el ciclo perceive->think->execute
+                }
+                break;
             default:
                 searchStep = 0;
                 break;
         }
-        searchStep += 1;
     }
 
     @Override
@@ -295,7 +296,8 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
 
     @Override
     public boolean done() {
-        return hasFinished();
+        return false;
+        //return hasFinished();
     }
 
     @Override
