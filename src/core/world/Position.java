@@ -1,5 +1,7 @@
 package core.world;
 
+import java.io.Serializable;
+
 /**
  *
  * @author estelle
@@ -8,7 +10,8 @@ package core.world;
  * X = column (0 = left)
  * Y = row (0 = top) */
 
-public class Position {
+public class Position implements Serializable {
+    private static final long serialVersionUID = 1L;
     private final int x;
     private final int y;
     private int value = 1; 

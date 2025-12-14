@@ -12,9 +12,10 @@ public class TranslatorMessageProtocol extends MessageProtocol {
     public String createMessageBody(String msg) {
         if (Translator.isStyle(msg, MessageStyle.GENZ)) {
             return Translator.translate(msg, MessageStyle.GENZ, MessageStyle.FINNISH);
-        } else if (Translator.isStyle(msg, MessageStyle.FINNISH) || Translator.isStyle(msg, MessageStyle.SANTA)) {
-            return Translator.translate(msg, MessageStyle.FINNISH, MessageStyle.GENZ);
+        } else if (Translator.isStyle(msg, MessageStyle.SANTA)) {
+            return Translator.translate(msg, MessageStyle.SANTA, MessageStyle.GENZ);
         } else {
+            // Do not translate FINNISH or plain messages
             return msg;
         }
     }

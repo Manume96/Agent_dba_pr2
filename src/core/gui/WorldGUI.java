@@ -113,6 +113,14 @@ public class WorldGUI extends JFrame {
             "Goal Reached", 
             JOptionPane.INFORMATION_MESSAGE);
     }
+
+    /**
+     * Update the displayed goal position
+     */
+    public void updateGoalPosition(Position newGoal) {
+        worldPanel.updateGoalPosition(newGoal);
+        repaint();
+    }
     
     /**
      * Inner panel that draws the world grid
@@ -123,7 +131,7 @@ public class WorldGUI extends JFrame {
         
         private final World world;
         private final Position initialPos;
-        private final Position goalPos;
+        private Position goalPos;
         private Position currentAgentPos;
         private final Set<Position> visitedPositions;
         private final int cellSize;
@@ -167,6 +175,11 @@ public class WorldGUI extends JFrame {
         public void updateAgentPosition(Position newPos) {
             this.currentAgentPos = newPos;
             visitedPositions.add(newPos);
+        }
+
+        public void updateGoalPosition(Position newGoal) {
+            this.goalPos = newGoal;
+            repaint();
         }
         
         /**
