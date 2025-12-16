@@ -6,6 +6,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.HashSet;
 import java.util.Set;
+import javax.swing.border.TitledBorder;
+import java.awt.BorderLayout;
+import javax.imageio.ImageIO;
+import java.awt.Image;
 
 /**
  * Graphical User Interface to visualize the world and agent movement
@@ -19,32 +23,65 @@ import java.util.Set;
 public class WorldGUI extends JFrame {
     
     private final WorldPanel worldPanel;
-    private final JLabel energyLabel;
-    private int currentEnergy = 0;
+    // private final JLabel energyLabel;
+    //private int currentEnergy = 0;
+    
+    private final JTextArea messageArea;
+    private final JScrollPane messageScrollPane;
     
     public WorldGUI(World world, Position initialPos, Position goalPos) {
         super("GUI Agent Navigation");
         
         this.worldPanel = new WorldPanel(world, initialPos, goalPos);
-        this.energyLabel = new JLabel("Energy: 0");
+        // this.energyLabel = new JLabel("Energy: 0");
         
+        // messages
+        this.messageArea = new JTextArea(20, 30);
+        this.messageArea.setEditable(false);
+        this.messageArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        this.messageScrollPane = new JScrollPane(messageArea);
+        this.messageScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+
         setupUI();
         
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        pack();
-        
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        int maxWidth = (int)(screenSize.width * 0.95);
-        int maxHeight = (int)(screenSize.height * 0.95);
-        
-        if (getWidth() > maxWidth || getHeight() > maxHeight) {
-            setSize(Math.min(getWidth(), maxWidth), Math.min(getHeight(), maxHeight));
-        }
+        setExtendedState(JFrame.MAXIMIZED_BOTH); 
         
         setLocationRelativeTo(null);
         setVisible(true);
+        
+        SwingUtilities.invokeLater(() -> {
+            worldPanel.scrollToAgent();
+        });
     }
     
+    private void setupUI() {
+        setLayout(new BorderLayout(10, 10));
+
+        // Panel messages on left
+        JPanel leftPanel = new JPanel(new BorderLayout());
+        leftPanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createEtchedBorder(), 
+            "Agent Communications", 
+            TitledBorder.LEFT, 
+            TitledBorder.TOP
+        ));
+        leftPanel.add(messageScrollPane, BorderLayout.CENTER);
+        leftPanel.setPreferredSize(new Dimension(400, 0));
+
+        add(leftPanel, BorderLayout.WEST);
+
+        // Map right
+        JScrollPane worldScrollPane = new JScrollPane(worldPanel);
+        worldScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        worldScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        worldScrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        worldScrollPane.getHorizontalScrollBar().setUnitIncrement(16);
+
+        add(worldScrollPane, BorderLayout.CENTER);
+    }
+    
+    /*
     private void setupUI() {
         setLayout(new BorderLayout(10, 10));
         
@@ -59,8 +96,9 @@ public class WorldGUI extends JFrame {
         // Legend panel on the right side
         JPanel legendPanel = createLegendPanel();
         add(legendPanel, BorderLayout.EAST);
-    }
+    }*/
     
+    /*
     private JPanel createLegendPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
@@ -74,8 +112,9 @@ public class WorldGUI extends JFrame {
         panel.add(energyLabel);
         
         return panel;
-    }
+    }*/
     
+    /*
     private JPanel createLegendItem(Color color, String text) {
         JPanel item = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JPanel colorBox = new JPanel();
@@ -85,7 +124,7 @@ public class WorldGUI extends JFrame {
         item.add(colorBox);
         item.add(new JLabel(text));
         return item;
-    }
+    }*/
     
     /**
      * Updates the agent's position on the GUI
@@ -96,20 +135,19 @@ public class WorldGUI extends JFrame {
         repaint();
     }
     
-    /**
-     * Updates the energy consumed display
-     */
+
+/*
     public void updateEnergy(int energy) {
         energyLabel.setText("Energy consumed: " + energy);
         this.currentEnergy = energy;
     }
-    
+  */  
     /**
      * Marks the goal as reached and shows a dialog
      */
     public void goalReached() {
         JOptionPane.showMessageDialog(this, 
-            "The agent has reached the goal!\nTotal energy: " + currentEnergy,
+            "The reindeer was found!",
             "Goal Reached", 
             JOptionPane.INFORMATION_MESSAGE);
     }
@@ -136,6 +174,11 @@ public class WorldGUI extends JFrame {
         private final Set<Position> visitedPositions;
         private final int cellSize;
         
+        private Image agentImage;
+        private Image reindeerImage;
+        private Image treeImage;
+        private Image santaImage;
+        
         public WorldPanel(World world, Position initialPos, Position goalPos) {
             this.world = world;
             this.initialPos = initialPos;
@@ -145,14 +188,30 @@ public class WorldGUI extends JFrame {
             
             visitedPositions.add(initialPos);
             
-            // Calculate cell size based on world dimensions
+            loadImages();
+
             this.cellSize = calculateCellSize(world.getWidth(), world.getHeight());
-            
-            // Calculate panel size based on world dimensions
+
             int width = world.getHeight() * cellSize + 2 * MARGIN;
             int height = world.getWidth() * cellSize + 2 * MARGIN;
             setPreferredSize(new Dimension(width, height));
-            setBackground(Color.WHITE);
+            setBackground(Color.WHITE);  
+            
+            SwingUtilities.invokeLater(() -> {
+                scrollToAgent();
+            });
+        }
+        
+        private void loadImages() {
+            try {
+                agentImage = ImageIO.read(getClass().getResource("/core/images/agent.png"));
+                reindeerImage = ImageIO.read(getClass().getResource("/core/images/reindeer.png"));
+                treeImage = ImageIO.read(getClass().getResource("/core/images/tree.png"));
+                santaImage = ImageIO.read(getClass().getResource("/core/images/santa.png"));
+            } catch (Exception e) {
+                System.err.println("Erreur chargement images: " + e.getMessage());
+                // Les images resteront null, on utilisera les formes par défaut
+            }
         }
         
         /**
@@ -166,9 +225,9 @@ public class WorldGUI extends JFrame {
             } else if (maxDimension <= 20) {
                 return 30; 
             } else if (maxDimension <= 50) {
-                return 15; 
+                return 13; 
             } else {
-                return 10; 
+                return 13; 
             }
         }
         
@@ -215,17 +274,29 @@ public class WorldGUI extends JFrame {
                     
                     // Determine cell color based on its state
                     if (world.isObstacle(pos)) {
-                        // Obstacle in gray
-                        g2d.setColor(Color.GRAY);
-                        g2d.fillRect(x, y, cellSize, cellSize);
+                        if (treeImage != null) {
+                            g2d.drawImage(treeImage, x, y, cellSize, cellSize, null);
+                        } else {
+                            g2d.setColor(Color.GRAY);
+                            g2d.fillRect(x, y, cellSize, cellSize);
+                        }
                     } else if (visitedPositions.contains(pos) && !pos.equals(currentAgentPos)) {
-                        // Visited cells in yellow
-                        g2d.setColor(new Color(255, 255, 150));
+                        g2d.setColor(new Color(176, 242, 183));
                         g2d.fillRect(x, y, cellSize, cellSize);
-                    } else if (pos.equals(goalPos)) {
-                        // Goal in blue
-                        g2d.setColor(new Color(100, 150, 255));
+                    } else if (goalPos != null && pos.equals(goalPos)) {
+                        g2d.setColor(new Color(240, 128, 128));
                         g2d.fillRect(x, y, cellSize, cellSize);
+
+                        // Senta
+                        if (goalPos.getX() == 10 && goalPos.getY() == 10) {
+                            if (santaImage != null) {
+                                g2d.drawImage(santaImage, x, y, cellSize, cellSize, null);
+                            }
+                            } else { //reindeer
+                                if (reindeerImage != null) {
+                                    g2d.drawImage(reindeerImage, x, y, cellSize, cellSize, null);
+                            }
+                        }
                     } else if (pos.equals(initialPos)) {
                         // Initial position in green
                         g2d.setColor(new Color(150, 255, 150));
@@ -253,16 +324,17 @@ public class WorldGUI extends JFrame {
         private void drawAgent(Graphics2D g2d) {
             int x = MARGIN + currentAgentPos.getY() * cellSize;
             int y = MARGIN + currentAgentPos.getX() * cellSize;
-            
-            int centerX = x + cellSize / 2;
-            int centerY = y + cellSize / 2;
-            int radius = cellSize / 3;
-            
-            // Draw orange circle
-            g2d.setColor(new Color(255, 140, 0)); 
-            g2d.fillOval(centerX - radius, centerY - radius, radius * 2, radius * 2);
+
+            if (agentImage != null) {
+                g2d.drawImage(agentImage, x, y, cellSize, cellSize, null);
+            } else { // Fallback: cercle orange
+                int centerX = x + cellSize / 2;
+                int centerY = y + cellSize / 2;
+                int radius = cellSize / 3;
+                g2d.setColor(new Color(255, 140, 0));
+                g2d.fillOval(centerX - radius, centerY - radius, radius * 2, radius * 2);
+            }
         }
-        
         
         /**
          * Draw a letter in the cell
@@ -278,7 +350,17 @@ public class WorldGUI extends JFrame {
         }
         
         private void drawGoalMarker(Graphics2D g2d) {
-            drawMarker(g2d, goalPos, "G", Color.BLUE);
+            if (goalPos != null) {
+                if (goalPos.getX() == 10 && goalPos.getY() == 10) {
+                    if (santaImage == null) {
+                        drawMarker(g2d, goalPos, "S", Color.RED);
+                    }
+                } else {
+                    if (reindeerImage == null) {
+                        drawMarker(g2d, goalPos, "R", Color.BLUE);
+                    }
+                }
+            }
         }
         
         private void drawInitialMarker(Graphics2D g2d) {
@@ -287,4 +369,15 @@ public class WorldGUI extends JFrame {
             }
         }
     }
+    
+    // Add a message to gui
+   public void addMessage(String sender, String message, String recipient) {
+       SwingUtilities.invokeLater(() -> {
+           String formattedMessage = String.format("%s → %s: %s\n", sender, recipient, message);
+           messageArea.append(formattedMessage);
+           messageArea.setCaretPosition(messageArea.getDocument().getLength());
+       });
+   }
+   
+    
 }
