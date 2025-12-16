@@ -39,12 +39,14 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
     // Search sub-steps for communication with Rudolph
     private int searchStep;
     private int reportStep;
-    
+
     private Position targetPosition = null;
     private String currentReindeer = null;
 
     private String translatedText = null;
-    private ACLMessage santaReply = null;
+
+    private ACLMessage lastSantaMessage = null;
+    private ACLMessage lastRudolphMessage = null;
 
     private MessageProtocol messageProtocol;
 
@@ -62,12 +64,14 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
         this.authStep = 0;
         this.searchStep = 0;
         this.reportStep = 0;
-        
+
         Logger.info("Comportamiento construido");
     }
 
     @Override
     public void action() {
+        Logger.info("Current phase: " + currentPhase);
+
         switch (currentPhase) {
             case AUTHORIZATION -> doAuthorizationPhase(); // El agente se presenta ante Santa
             // case TRANSLATION -> doTranslationPhase();// El agente habla con Elfo
@@ -75,9 +79,21 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
             case SEARCH_GOAL -> doSearch(); // El Agente habla con el Reno y busca objetivos
             case REPORT -> doReportPhase();// El agente Avisa a santa
             case FINISHED -> {
+                Logger.info("=== MISSION ACCOMPLISHED ===");
                 Logger.info("Agente ha terminado su misión. Cerrando...");
                 myAgent.doDelete();
             }
+        }
+    }
+
+    private void recordLastMessage(ACLMessage msg) {
+        if (msg == null)
+            return;
+        String sender = msg.getSender() != null ? msg.getSender().getLocalName() : null;
+        if (AgentName.SANTA.local().equals(sender)) {
+            lastSantaMessage = msg;
+        } else if (AgentName.RUDOLPH.local().equals(sender)) {
+            lastRudolphMessage = msg;
         }
     }
 
@@ -85,9 +101,9 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
 
         ACLMessage msg = null;
         String content = "";
+
         switch (authStep) {
             case 0: // Pedir traducción al Traductor
-
                 content = messageProtocol.createMessageBody(ContentKeyword.WANT_TO_HELP.getText());
                 msg = messageProtocol.createMessage(ACLMessage.REQUEST, AgentName.TRANSLATOR, content,
                         ConversationId.TRANSLATION);
@@ -98,16 +114,17 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
 
             case 1: // Recibir la traducción del Traductor
                 msg = myAgent.blockingReceive();
+                recordLastMessage(msg);
                 if (msg != null && ConversationId.TRANSLATION.getId().equals(msg.getConversationId())
                         && msg.getPerformative() == ACLMessage.INFORM) {
                     translatedText = messageProtocol.extractMessageBody(msg);
                     displayMessageWithDelay("Translator", translatedText, "Agent");
                     Logger.info("Traducción recibida: " + translatedText);
                 } else {
+                    currentPhase = Phase.FINISHED;
                     Logger.warn("Unexpected message while waiting translation: " + msg);
                 }
                 break;
-
             case 2: // Enviar PROPOSE a Santa con el texto traducido
                 if (translatedText == null) {
                     Logger.error("No translated text available to propose to Santa");
@@ -123,10 +140,10 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
 
             case 3: // Esperar respuesta de Santa (ACCEPT/REJECT)
                 msg = myAgent.blockingReceive();
+                recordLastMessage(msg);
                 if (msg != null && ConversationId.AUTHORIZATION.getId().equals(msg.getConversationId())) {
                     if (msg.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
-                        santaReply = msg;
-                        displayMessageWithDelay("Santa", santaReply.getContent(), "Agent");
+                        displayMessageWithDelay("Santa", lastSantaMessage.getContent(), "Agent");
                         Logger.info("Santa accepted. Will request translation in next step.");
                     } else if (msg.getPerformative() == ACLMessage.REJECT_PROPOSAL) {
                         Logger.warn("Santa rejected the proposal. Finishing.");
@@ -141,20 +158,16 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 break;
 
             case 4: // Enviar petición de traducción al Translator con la respuesta de Santa
-                if (santaReply == null) {
-                    Logger.error("No Santa reply to forward to Translator");
-                    currentPhase = Phase.FINISHED;
-                    break;
-                }
                 ACLMessage treq = messageProtocol.createMessage(ACLMessage.REQUEST, AgentName.TRANSLATOR,
-                        santaReply.getContent(), ConversationId.TRANSLATION);
+                        lastSantaMessage.getContent(), ConversationId.TRANSLATION);
                 myAgent.send(treq);
-                displayMessageWithDelay("Agent", santaReply.getContent(), "Translator");
+                displayMessageWithDelay("Agent", lastSantaMessage.getContent(), "Translator");
                 Logger.info("Forwarded Santa reply to Translator for extraction");
                 break;
 
             case 5: // Esperar la respuesta con el código extraido
                 msg = myAgent.blockingReceive();
+                recordLastMessage(msg);
                 if (msg != null && ConversationId.TRANSLATION.getId().equals(msg.getConversationId())
                         && msg.getPerformative() == ACLMessage.INFORM) {
                     String translated = msg.getContent();
@@ -171,7 +184,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                         secretCode = coreText.trim();
                         Logger.info("Extracted secret code: " + secretCode);
                         currentPhase = Phase.SEARCH_GOAL;
-                        authStep = 0;
+                        authStep = -1;// Reseteamos para la próxima fase
                     } else {
                         Logger.warn("Translator returned unexpected style when extracting code: " + translated);
                     }
@@ -186,7 +199,8 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
         }
         authStep += 1;
     }
-private void doSearch() {
+
+    private void doSearch() {
         if (secretCode == null) {
             Logger.error("No secretCode available. Returning to AUTHORIZATION.");
             currentPhase = Phase.AUTHORIZATION;
@@ -196,15 +210,16 @@ private void doSearch() {
         ACLMessage msg = null;
         String content = "";
         switch (searchStep) {
+
             case 0: // enviar PROPOSE con el codigo secreto a Rudolph
                 content = messageProtocol.createMessageBody(ContentKeyword.WANT_TO_HELP.getText());
                 msg = messageProtocol.createMessage(ACLMessage.PROPOSE, AgentName.RUDOLPH, content,
                         ConversationId.MISSION);
                 msg.setConversationId(secretCode); // Esto es un parche para comprobar el código secreto
                 myAgent.send(msg);
+                searchStep = 1;// Pasamos al siguiente paso
                 displayMessageWithDelay("Agent", content, "Rudolph");
                 Logger.info("Sent PROPOSE to Rudolph with convId=" + secretCode);
-                searchStep=1;// Pasamos al siguiente paso
                 break;
 
             case 1: // recibir respuesta ACCEPT/REJECT de Rudolph
@@ -220,81 +235,78 @@ private void doSearch() {
                         searchStep = 0;
                         return; // No tiene sentido continuar, abortamos aqui
                     }
-                } else {
-                    Logger.warn("Unexpected message while waiting Rudolph accept/reject: " + msg);
-                }
-                searchStep=2;// Pasamos al siguiente paso
-                break;
-
-            case 2: // Realizar QUERY_REF sobre la posición del siguiente reno
-                msg = messageProtocol.createMessage(ACLMessage.QUERY_REF, AgentName.RUDOLPH,
-                        ContentKeyword.WHERE_IS_REINDEER.getText(),
-                        ConversationId.MISSION);
-                msg.setConversationId(secretCode);// Esto es un parche para comprobar el código secreto
-                myAgent.send(msg);
-                displayMessageWithDelay("Agent",msg.getContent(), "Rudolph");
-                Logger.info("Sent QUERY_REF to Rudolph (convId=" + secretCode + ")");
-                searchStep=3;// Pasamos al siguiente paso
-                break;
-
-            case 3: // Recibir respuesta de Rudolph. Si posición -> Paso 4, si ALL_FOUND -> Paso 5
-                msg = myAgent.blockingReceive();
-                if (msg != null && secretCode.equals(msg.getConversationId())) {
-                    try {
-                        Object obj = msg.getContentObject();
-                        if (obj instanceof Position) {
-                            targetPosition = (Position) obj;
-                            this.proxy.setGoalPosition(targetPosition);
-                            String positionMsg = "Position: (" + targetPosition.getX() + ", " + targetPosition.getY() + ")";
-                            displayMessageWithDelay("Rudolph", positionMsg, "Agent");
-                            Logger.info("Received Position object from Rudolph: " + targetPosition);
-                            Logger.info("Starting movement loop towards " + targetPosition + " (placeholder)");
-                            searchStep=4;// Pasamos al siguiente paso
-                        } else {
-                            Logger.warn("Received non-Position object from Rudolph: "
-                                    + (obj == null ? "null" : obj.getClass()));
-                            currentPhase = Phase.REPORT;
-                            searchStep = 0;
-                            return; // No tiene sentido continuar, abortamos aqui
-                        }
-                    } catch (Exception e) {
-                        // If cannot read object, check for ALL_FOUND string in content
-                        Logger.debug("getContentObject() failed: " + e);
-                        String body = msg.getContent();
-                        if (body != null && ContentKeyword.ALL_FOUND.getText().equals(body)) {
-                            displayMessageWithDelay("Rudolph", body, "Agent");
-                            Logger.info("Rudolph reports ALL_FOUND. Switching to REPORT phase.");
-                            currentPhase = Phase.REPORT;
-                            searchStep = 0;
-                            return;
-                        }
-                        Logger.warn("Unexpected message while waiting Rudolph position: " + msg);
-                        currentPhase = Phase.REPORT;
+                    recordLastMessage(msg);
+                    if (msg != null && secretCode.equals(msg.getConversationId())
+                            && msg.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
+                        searchStep = 2;
+                        Logger.info("Rudolph accepted proposal");
+                    } else {
+                        currentPhase = Phase.FINISHED;
                         searchStep = 0;
-                        return;
+                        Logger.warn("Rudolph rejected proposal or unexpected message: " + msg);
                     }
-                    // searchStep ya se asignó explícitamente arriba
-                } else {
+                }
+                break;
+
+            case 2: // Enviar QUERY_REF como respuesta a la última comunicación de Rudolph
+                msg = lastRudolphMessage.createReply();
+                msg.setPerformative(ACLMessage.QUERY_REF);
+                msg.setContent(ContentKeyword.WHERE_IS_REINDEER.getText());
+                myAgent.send(msg);
+                searchStep = 3;// Pasamos al siguiente paso
+                displayMessageWithDelay("Agent", msg.getContent(), "Rudolph");
+                Logger.info("Sent QUERY_REF reply to Rudolph (convId=" + secretCode + ")");
+                break;
+
+            case 3: // Recibir respuesta de Rudolph
+                msg = myAgent.blockingReceive();
+                recordLastMessage(msg);
+
+                if (msg == null || !secretCode.equals(msg.getConversationId())) {
                     Logger.warn("Unexpected message while waiting Rudolph position: " + msg);
                     currentPhase = Phase.REPORT;
                     searchStep = 0;
-                    return;
+                    break;
+                }
+
+                try {
+                    Object rudolphResponse = msg.getContentObject(); // puede lanzar UnreadableException
+                    if (rudolphResponse instanceof Position position) {
+                        targetPosition = position;
+                        proxy.setGoalPosition(targetPosition);
+                        Logger.info("Received Position from Rudolph: " + targetPosition);
+                        searchStep = 4; // seguir con movimiento
+                    } else {
+                        String body = msg.getContent(); // si ALL_FOUND
+                        if (ContentKeyword.ALL_FOUND.getText().equals(body)) {
+                            Logger.info("Rudolph reports ALL_FOUND. Switching to REPORT phase.");
+                        } else {
+                            Logger.warn("Unexpected content from Rudolph: " + body);
+                        }
+                        currentPhase = Phase.REPORT;
+                        searchStep = 0;
+                    }
+                } catch (Exception e) {
+                    Logger.warn("Failed to read Rudolph's content: " + e);
+                    currentPhase = Phase.REPORT;
+                    searchStep = 0;
                 }
                 break;
+
             case 4: // Perceive
                 lastPerception = proxy.perceive();
                 searchStep = 5;
                 break;
 
-            case 5: // THink
+            case 5: // Think
                 nextAtion = this.think(lastPerception);
                 searchStep = 6;
                 break;
-            case 6: //Execute
+            case 6: // Execute
                 this.execute(nextAtion);
                 searchStep = 7;
                 break;
-            
+
             case 7: // Check if goal reached
                 if (hasFinished()) {
                     Logger.info("Reached target position of current reindeer: " + targetPosition);
@@ -309,64 +321,78 @@ private void doSearch() {
         }
     }
 
-private void doReportPhase() {
+    private void doReportPhase() {
         ACLMessage msg = null;
         String content = "";
 
         switch (reportStep) {
-            case 0:
+            case 0: // Pedir traducción al Traductor
                 content = messageProtocol.createMessageBody(ContentKeyword.WHERE_ARE_YOU.getText());
-                msg = messageProtocol.createMessage(ACLMessage.REQUEST, AgentName.TRANSLATOR, content, ConversationId.TRANSLATION);
+                msg = messageProtocol.createMessage(ACLMessage.REQUEST, AgentName.TRANSLATOR, content,
+                        ConversationId.TRANSLATION);
                 myAgent.send(msg);
                 displayMessageWithDelay("Agent", content, "Translator");
                 Logger.info("Requesting translation for: " + content);
                 reportStep = 1;
                 break;
 
-            case 1:
+            case 1: // Respuesta del Traductor
                 msg = myAgent.blockingReceive();
                 if (msg != null && msg.getPerformative() == ACLMessage.INFORM) {
-                    translatedText = msg.getContent(); 
+                    translatedText = msg.getContent();
                     displayMessageWithDelay("Translator", translatedText, "Agent");
                     Logger.info("Translation received: " + translatedText);
                     reportStep = 2;
                 }
                 break;
 
-            case 2:
-                msg = messageProtocol.createMessage(ACLMessage.QUERY_REF, AgentName.SANTA, translatedText, ConversationId.REPORT);
-                myAgent.send(msg);
-                displayMessageWithDelay("Agent", translatedText, "Santa");
-                Logger.info("Asking Santa for location (QUERY_REF).");
+            case 2: // Contesto al útltimo mensaje de santa
+                if (lastSantaMessage != null) {
+                    msg = lastSantaMessage.createReply();
+                    msg.setPerformative(ACLMessage.QUERY_REF);
+                    msg.setContent(translatedText);
+                    msg.setConversationId(ConversationId.REPORT.getId());
+                    myAgent.send(msg);
+                    Logger.info("Replied to Santa with QUERY_REF (using lastSantaMessage).");
+                } else {
+                    msg = messageProtocol.createMessage(ACLMessage.QUERY_REF, AgentName.SANTA, translatedText,
+                            ConversationId.REPORT);
+                    myAgent.send(msg);
+                    displayMessageWithDelay("Agent", translatedText, "Santa");
+                    Logger.warn("lastSantaMessage was null; sent fresh QUERY_REF to Santa.");
+                }
                 reportStep = 3;
                 break;
 
-            case 3:
+            case 3: // Respuesta de santa
                 msg = myAgent.blockingReceive();
-                if (msg != null && ConversationId.REPORT.getId().equals(msg.getConversationId()) && msg.getPerformative() == ACLMessage.INFORM) {
-                    santaReply = msg;
-                    proxy.displayMessage("Santa", santaReply.getContent(), "Agent");
-                    displayMessageWithDelay("Santa", santaReply.getContent(), "Agent");
-                    Logger.info("Santa replied: " + santaReply.getContent());
+                recordLastMessage(msg);
+                if (msg != null && ConversationId.REPORT.getId().equals(msg.getConversationId())
+                        && msg.getPerformative() == ACLMessage.INFORM) {
+                    proxy.displayMessage("Santa", lastSantaMessage.getContent(), "Agent");
+                    displayMessageWithDelay("Santa", lastSantaMessage.getContent(), "Agent");
+                    Logger.info("Santa replied: " + lastSantaMessage.getContent());
                     reportStep = 4;
                 }
                 break;
 
-            case 4:
-                msg = messageProtocol.createMessage(ACLMessage.REQUEST, AgentName.TRANSLATOR, santaReply.getContent(), ConversationId.TRANSLATION);
+            case 4: // Pidiendo traducción al traductor
+                msg = messageProtocol.createMessage(ACLMessage.REQUEST, AgentName.TRANSLATOR,
+                        lastSantaMessage.getContent(),
+                        ConversationId.TRANSLATION);
                 myAgent.send(msg);
-                proxy.displayMessage("Agent", santaReply.getContent(), "Translator");
-                displayMessageWithDelay("Agent", santaReply.getContent(), "Translator");
+                proxy.displayMessage("Agent", lastSantaMessage.getContent(), "Translator");
+                displayMessageWithDelay("Agent", lastSantaMessage.getContent(), "Translator");
                 Logger.info("Requesting translation of Santa's reply.");
                 reportStep = 5;
                 break;
-            case 5:
+            case 5: // Esperando la respuesta del traductor
                 msg = myAgent.blockingReceive();
                 if (msg != null && msg.getPerformative() == ACLMessage.INFORM) {
                     String val = msg.getContent(); // "Bro Position:(10,10) En Plan"
                     displayMessageWithDelay("Translator", val, "Agent");
                     Logger.info("Phase 3: Translated position message: " + val);
-                    
+
                     try {
                         int start = val.indexOf("(");
                         int end = val.indexOf(")");
@@ -375,11 +401,11 @@ private void doReportPhase() {
                             String[] parts = coords.split(",");
                             int x = Integer.parseInt(parts[0].trim());
                             int y = Integer.parseInt(parts[1].trim());
-                            
+
                             this.targetPosition = new Position(x, y);
                             this.proxy.setGoalPosition(targetPosition);
                             Logger.info("Phase 3: Target set to Santa's position: " + targetPosition);
-                            
+
                             reportStep = 6; // Move to movement loop
                         } else {
                             Logger.error("Phase 3: Could not parse coordinates from: " + val);
@@ -389,7 +415,7 @@ private void doReportPhase() {
                     }
                 }
                 break;
-                
+
             case 6:
                 lastPerception = proxy.perceive();
                 reportStep = 7;
@@ -402,7 +428,7 @@ private void doReportPhase() {
 
             case 8: // Execute & Check
                 this.execute(nextAtion);
-                if (hasFinished()) { 
+                if (hasFinished()) {
                     Logger.info("Arrived at Santa's location!");
                     reportStep = 9;
                 } else {
@@ -410,16 +436,17 @@ private void doReportPhase() {
                 }
                 break;
 
-            case 9:
+            case 9: // Obtener la traducción
                 content = messageProtocol.createMessageBody(ContentKeyword.I_ARRIVED.getText());
-                msg = messageProtocol.createMessage(ACLMessage.REQUEST, AgentName.TRANSLATOR, content, ConversationId.TRANSLATION);
+                msg = messageProtocol.createMessage(ACLMessage.REQUEST, AgentName.TRANSLATOR, content,
+                        ConversationId.TRANSLATION);
                 myAgent.send(msg);
                 displayMessageWithDelay("Agent", content, "Translator");
                 Logger.info("Requesting translation for arrival message.");
                 reportStep = 10;
                 break;
 
-            case 10:
+            case 10: // Esperando la traducción
                 msg = myAgent.blockingReceive();
                 if (msg != null && msg.getPerformative() == ACLMessage.INFORM) {
                     translatedText = msg.getContent();
@@ -430,29 +457,45 @@ private void doReportPhase() {
                 break;
 
             case 11:
-                msg = messageProtocol.createMessage(ACLMessage.INFORM, AgentName.SANTA, translatedText, ConversationId.REPORT);
-                myAgent.send(msg);
-                displayMessageWithDelay("Agent", translatedText, "Santa");
-                Logger.info("Informing Santa of arrival.");
+                // Reply to Santa's last message when informing of arrival
+                if (lastSantaMessage != null) {
+                    ACLMessage inform = lastSantaMessage.createReply();
+                    inform.setPerformative(ACLMessage.INFORM);
+                    inform.setContent(translatedText);
+                    inform.setConversationId(ConversationId.REPORT.getId());
+                    myAgent.send(inform);
+                    Logger.info("Replied to Santa informing arrival.");
+                } else {
+                    msg = messageProtocol.createMessage(ACLMessage.INFORM, AgentName.SANTA, translatedText,
+                            ConversationId.REPORT);
+                    myAgent.send(msg);
+                    displayMessageWithDelay("Agent", translatedText, "Santa");
+                    Logger.warn("lastSantaMessage was null; sent fresh INFORM to Santa.");
+                }
                 reportStep = 12;
                 break;
 
             case 12:
                 msg = myAgent.blockingReceive();
-                if (msg != null && msg.getContent().contains(ContentKeyword.HO_HO_HO.getText())) {
-                    displayMessageWithDelay("Santa", msg.getContent(), "Agent");
-                    Logger.info("Phase 3: Santa says: " + msg.getContent());
-                    Logger.info("=== MISSION ACCOMPLISHED ===");
-                    currentPhase = Phase.FINISHED;
+                recordLastMessage(msg);
+                if (msg != null) {
+                    if (msg.getContent().contains(ContentKeyword.HO_HO_HO.getText())) {
+                        displayMessageWithDelay("Santa", msg.getContent(), "Agent");
+                        Logger.info("Phase 3: Santa says: " + msg.getContent());
+                        currentPhase = Phase.FINISHED;
+                    }
                 }
+                reportStep = 0;
                 break;
+
         }
     }
 
     @Override
     public boolean done() {
-        return false;
-        //return hasFinished();
+        Logger.info("Checking if agent has finished its mission..." + currentPhase);
+        return currentPhase == Phase.FINISHED;
+        // return hasFinished();
     }
 
     @Override
@@ -575,13 +618,6 @@ private void doReportPhase() {
             Logger.warn("El agente no sabe qué hacer. Esperando...");
         }
 
-        /*
-         * try {
-         * Thread.sleep(1500);
-         * } catch (InterruptedException e) {
-         * Logger.error("Interrupción durante el sleep"+e);
-         * }
-         */
     }
 
     @Override
