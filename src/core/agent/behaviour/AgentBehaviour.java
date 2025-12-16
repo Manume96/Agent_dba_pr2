@@ -143,7 +143,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 recordLastMessage(msg);
                 if (msg != null && ConversationId.AUTHORIZATION.getId().equals(msg.getConversationId())) {
                     if (msg.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
-                        displayMessageWithDelay("Santa", santaReply.getContent(), "Agent");
+                        displayMessageWithDelay("Santa", lastSantaMessage.getContent(), "Agent");
                         Logger.info("Santa accepted. Will request translation in next step.");
                     } else if (msg.getPerformative() == ACLMessage.REJECT_PROPOSAL) {
                         Logger.warn("Santa rejected the proposal. Finishing.");
@@ -161,7 +161,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 ACLMessage treq = messageProtocol.createMessage(ACLMessage.REQUEST, AgentName.TRANSLATOR,
                         lastSantaMessage.getContent(), ConversationId.TRANSLATION);
                 myAgent.send(treq);
-                displayMessageWithDelay("Agent", santaReply.getContent(), "Translator");
+                displayMessageWithDelay("Agent", lastSantaMessage.getContent(), "Translator");
                 Logger.info("Forwarded Santa reply to Translator for extraction");
                 break;
 
@@ -235,15 +235,16 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                         searchStep = 0;
                         return; // No tiene sentido continuar, abortamos aqui
                     }
-                recordLastMessage(msg);
-                if (msg != null && secretCode.equals(msg.getConversationId())
-                        && msg.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
-                    searchStep = 2;
-                    Logger.info("Rudolph accepted proposal");
-                } else {
-                    currentPhase = Phase.FINISHED;
-                    searchStep = 0;
-                    Logger.warn("Rudolph rejected proposal or unexpected message: " + msg);
+                    recordLastMessage(msg);
+                    if (msg != null && secretCode.equals(msg.getConversationId())
+                            && msg.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
+                        searchStep = 2;
+                        Logger.info("Rudolph accepted proposal");
+                    } else {
+                        currentPhase = Phase.FINISHED;
+                        searchStep = 0;
+                        Logger.warn("Rudolph rejected proposal or unexpected message: " + msg);
+                    }
                 }
                 break;
 
@@ -253,7 +254,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 msg.setContent(ContentKeyword.WHERE_IS_REINDEER.getText());
                 myAgent.send(msg);
                 searchStep = 3;// Pasamos al siguiente paso
-                displayMessageWithDelay("Agent",msg.getContent(), "Rudolph");
+                displayMessageWithDelay("Agent", msg.getContent(), "Rudolph");
                 Logger.info("Sent QUERY_REF reply to Rudolph (convId=" + secretCode + ")");
                 break;
 
@@ -358,7 +359,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                             ConversationId.REPORT);
                     myAgent.send(msg);
                     displayMessageWithDelay("Agent", translatedText, "Santa");
-                Logger.warn("lastSantaMessage was null; sent fresh QUERY_REF to Santa.");
+                    Logger.warn("lastSantaMessage was null; sent fresh QUERY_REF to Santa.");
                 }
                 reportStep = 3;
                 break;
@@ -368,8 +369,8 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 recordLastMessage(msg);
                 if (msg != null && ConversationId.REPORT.getId().equals(msg.getConversationId())
                         && msg.getPerformative() == ACLMessage.INFORM) {
-                    proxy.displayMessage("Santa", santaReply.getContent(), "Agent");
-                    displayMessageWithDelay("Santa", santaReply.getContent(), "Agent");
+                    proxy.displayMessage("Santa", lastSantaMessage.getContent(), "Agent");
+                    displayMessageWithDelay("Santa", lastSantaMessage.getContent(), "Agent");
                     Logger.info("Santa replied: " + lastSantaMessage.getContent());
                     reportStep = 4;
                 }
@@ -380,8 +381,8 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                         lastSantaMessage.getContent(),
                         ConversationId.TRANSLATION);
                 myAgent.send(msg);
-                proxy.displayMessage("Agent", santaReply.getContent(), "Translator");
-                displayMessageWithDelay("Agent", santaReply.getContent(), "Translator");
+                proxy.displayMessage("Agent", lastSantaMessage.getContent(), "Translator");
+                displayMessageWithDelay("Agent", lastSantaMessage.getContent(), "Translator");
                 Logger.info("Requesting translation of Santa's reply.");
                 reportStep = 5;
                 break;
@@ -469,7 +470,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                             ConversationId.REPORT);
                     myAgent.send(msg);
                     displayMessageWithDelay("Agent", translatedText, "Santa");
-                Logger.warn("lastSantaMessage was null; sent fresh INFORM to Santa.");
+                    Logger.warn("lastSantaMessage was null; sent fresh INFORM to Santa.");
                 }
                 reportStep = 12;
                 break;
@@ -480,7 +481,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 if (msg != null) {
                     if (msg.getContent().contains(ContentKeyword.HO_HO_HO.getText())) {
                         displayMessageWithDelay("Santa", msg.getContent(), "Agent");
-                    Logger.info("Phase 3: Santa says: " + msg.getContent());
+                        Logger.info("Phase 3: Santa says: " + msg.getContent());
                         currentPhase = Phase.FINISHED;
                     }
                 }
