@@ -35,7 +35,7 @@ public class Agent_dba extends Agent {
             
             String mapa = "maps/100x100-conObstaculos.txt";
             Position initialPos = new Position(50, 50);
-            Position tempGoal = new Position(10, 10); 
+            Position tempGoal = new Position(-1, -1); 
             
             World world = World.loadFromFile(mapa);
             EnvironmentWithGUI environment = new EnvironmentWithGUI(world, initialPos, tempGoal);

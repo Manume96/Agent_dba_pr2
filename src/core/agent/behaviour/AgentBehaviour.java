@@ -108,6 +108,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 msg = messageProtocol.createMessage(ACLMessage.REQUEST, AgentName.TRANSLATOR, content,
                         ConversationId.TRANSLATION);
                 myAgent.send(msg);
+                displayMessageWithDelay("Agent", content, "Translator");
                 Logger.info("Solicitando traducción para: " + content);
                 break;
 
@@ -117,6 +118,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 if (msg != null && ConversationId.TRANSLATION.getId().equals(msg.getConversationId())
                         && msg.getPerformative() == ACLMessage.INFORM) {
                     translatedText = messageProtocol.extractMessageBody(msg);
+                    displayMessageWithDelay("Translator", translatedText, "Agent");
                     Logger.info("Traducción recibida: " + translatedText);
                 } else {
                     currentPhase = Phase.FINISHED;
@@ -132,6 +134,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 msg = messageProtocol.createMessage(ACLMessage.PROPOSE, AgentName.SANTA, translatedText,
                         ConversationId.AUTHORIZATION);
                 myAgent.send(msg);
+                displayMessageWithDelay("Agent", translatedText, "Santa");
                 Logger.info("Propuesta enviada a Santa: " + translatedText);
                 break;
 
@@ -140,6 +143,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 recordLastMessage(msg);
                 if (msg != null && ConversationId.AUTHORIZATION.getId().equals(msg.getConversationId())) {
                     if (msg.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
+                        displayMessageWithDelay("Santa", santaReply.getContent(), "Agent");
                         Logger.info("Santa accepted. Will request translation in next step.");
                     } else if (msg.getPerformative() == ACLMessage.REJECT_PROPOSAL) {
                         Logger.warn("Santa rejected the proposal. Finishing.");
@@ -157,6 +161,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 ACLMessage treq = messageProtocol.createMessage(ACLMessage.REQUEST, AgentName.TRANSLATOR,
                         lastSantaMessage.getContent(), ConversationId.TRANSLATION);
                 myAgent.send(treq);
+                displayMessageWithDelay("Agent", santaReply.getContent(), "Translator");
                 Logger.info("Forwarded Santa reply to Translator for extraction");
                 break;
 
@@ -166,6 +171,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 if (msg != null && ConversationId.TRANSLATION.getId().equals(msg.getConversationId())
                         && msg.getPerformative() == ACLMessage.INFORM) {
                     String translated = msg.getContent();
+                    displayMessageWithDelay("Translator", translated, "Agent");
                     Logger.info("Received translation from Translator: " + translated);
                     if (core.agent.communication.Translator.isStyle(translated, MessageStyle.GENZ)) {
                         String prefix = MessageStyle.GENZ.getPrefix();
@@ -212,11 +218,23 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 msg.setConversationId(secretCode); // Esto es un parche para comprobar el código secreto
                 myAgent.send(msg);
                 searchStep = 1;// Pasamos al siguiente paso
+                displayMessageWithDelay("Agent", content, "Rudolph");
                 Logger.info("Sent PROPOSE to Rudolph with convId=" + secretCode);
                 break;
 
             case 1: // recibir respuesta ACCEPT/REJECT de Rudolph
                 msg = myAgent.blockingReceive();
+                if (msg != null && secretCode.equals(msg.getConversationId())) {
+                    if (msg.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
+                        displayMessageWithDelay("Rudolph", "Accepted", "Agent");
+                        Logger.info("Rudolph accepted proposal");
+                    } else {
+                        displayMessageWithDelay("Rudolph", "Rejected", "Agent");
+                        Logger.warn("Rudolph rejected proposal. Moving to REPORT phase.");
+                        currentPhase = Phase.REPORT;
+                        searchStep = 0;
+                        return; // No tiene sentido continuar, abortamos aqui
+                    }
                 recordLastMessage(msg);
                 if (msg != null && secretCode.equals(msg.getConversationId())
                         && msg.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
@@ -235,6 +253,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 msg.setContent(ContentKeyword.WHERE_IS_REINDEER.getText());
                 myAgent.send(msg);
                 searchStep = 3;// Pasamos al siguiente paso
+                displayMessageWithDelay("Agent",msg.getContent(), "Rudolph");
                 Logger.info("Sent QUERY_REF reply to Rudolph (convId=" + secretCode + ")");
                 break;
 
@@ -311,6 +330,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 msg = messageProtocol.createMessage(ACLMessage.REQUEST, AgentName.TRANSLATOR, content,
                         ConversationId.TRANSLATION);
                 myAgent.send(msg);
+                displayMessageWithDelay("Agent", content, "Translator");
                 Logger.info("Requesting translation for: " + content);
                 reportStep = 1;
                 break;
@@ -319,6 +339,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 msg = myAgent.blockingReceive();
                 if (msg != null && msg.getPerformative() == ACLMessage.INFORM) {
                     translatedText = msg.getContent();
+                    displayMessageWithDelay("Translator", translatedText, "Agent");
                     Logger.info("Translation received: " + translatedText);
                     reportStep = 2;
                 }
@@ -336,7 +357,8 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                     msg = messageProtocol.createMessage(ACLMessage.QUERY_REF, AgentName.SANTA, translatedText,
                             ConversationId.REPORT);
                     myAgent.send(msg);
-                    Logger.warn("lastSantaMessage was null; sent fresh QUERY_REF to Santa.");
+                    displayMessageWithDelay("Agent", translatedText, "Santa");
+                Logger.warn("lastSantaMessage was null; sent fresh QUERY_REF to Santa.");
                 }
                 reportStep = 3;
                 break;
@@ -346,6 +368,8 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 recordLastMessage(msg);
                 if (msg != null && ConversationId.REPORT.getId().equals(msg.getConversationId())
                         && msg.getPerformative() == ACLMessage.INFORM) {
+                    proxy.displayMessage("Santa", santaReply.getContent(), "Agent");
+                    displayMessageWithDelay("Santa", santaReply.getContent(), "Agent");
                     Logger.info("Santa replied: " + lastSantaMessage.getContent());
                     reportStep = 4;
                 }
@@ -356,6 +380,8 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                         lastSantaMessage.getContent(),
                         ConversationId.TRANSLATION);
                 myAgent.send(msg);
+                proxy.displayMessage("Agent", santaReply.getContent(), "Translator");
+                displayMessageWithDelay("Agent", santaReply.getContent(), "Translator");
                 Logger.info("Requesting translation of Santa's reply.");
                 reportStep = 5;
                 break;
@@ -363,6 +389,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 msg = myAgent.blockingReceive();
                 if (msg != null && msg.getPerformative() == ACLMessage.INFORM) {
                     String val = msg.getContent(); // "Bro Position:(10,10) En Plan"
+                    displayMessageWithDelay("Translator", val, "Agent");
                     Logger.info("Phase 3: Translated position message: " + val);
 
                     try {
@@ -413,6 +440,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 msg = messageProtocol.createMessage(ACLMessage.REQUEST, AgentName.TRANSLATOR, content,
                         ConversationId.TRANSLATION);
                 myAgent.send(msg);
+                displayMessageWithDelay("Agent", content, "Translator");
                 Logger.info("Requesting translation for arrival message.");
                 reportStep = 10;
                 break;
@@ -421,6 +449,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 msg = myAgent.blockingReceive();
                 if (msg != null && msg.getPerformative() == ACLMessage.INFORM) {
                     translatedText = msg.getContent();
+                    displayMessageWithDelay("Translator", translatedText, "Agent");
                     Logger.info("Translation received: " + translatedText);
                     reportStep = 11;
                 }
@@ -439,7 +468,8 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                     msg = messageProtocol.createMessage(ACLMessage.INFORM, AgentName.SANTA, translatedText,
                             ConversationId.REPORT);
                     myAgent.send(msg);
-                    Logger.warn("lastSantaMessage was null; sent fresh INFORM to Santa.");
+                    displayMessageWithDelay("Agent", translatedText, "Santa");
+                Logger.warn("lastSantaMessage was null; sent fresh INFORM to Santa.");
                 }
                 reportStep = 12;
                 break;
@@ -449,7 +479,8 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 recordLastMessage(msg);
                 if (msg != null) {
                     if (msg.getContent().contains(ContentKeyword.HO_HO_HO.getText())) {
-                        Logger.info("Phase 3: Santa says: " + msg.getContent());
+                        displayMessageWithDelay("Santa", msg.getContent(), "Agent");
+                    Logger.info("Phase 3: Santa says: " + msg.getContent());
                         currentPhase = Phase.FINISHED;
                     }
                 }
@@ -598,4 +629,13 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
         return currentPosition.equals(goalPos);
     }
 
+    // Displays message in GUI with a delay for visibility
+    private void displayMessageWithDelay(String sender, String message, String recipient) {
+        proxy.displayMessage(sender, message, recipient);
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            Logger.error("Interruption during message display: " + e);
+        }
+    }
 }

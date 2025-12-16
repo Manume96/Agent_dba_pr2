@@ -5,6 +5,7 @@ import core.environment.Environment;
 import core.environment.Surroundings;
 import core.world.Position;
 import core.logger.Logger;
+import core.environment.EnvironmentWithGUI;
 
 public class EnvironmentProxy implements IEnvironmentProxy {
 
@@ -116,5 +117,13 @@ public class EnvironmentProxy implements IEnvironmentProxy {
     @Override
     public int getSpentEnergy() {
         return env.getSpentEnergy();
+    }
+    
+    // Displays message in the GUI 
+    public void displayMessage(String sender, String message, String recipient) {
+        if (env instanceof EnvironmentWithGUI) {
+            EnvironmentWithGUI envGUI = (EnvironmentWithGUI) env;
+            envGUI.getGUI().addMessage(sender, message, recipient);
+        }
     }
 }

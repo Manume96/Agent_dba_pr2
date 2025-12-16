@@ -15,7 +15,7 @@ import core.world.World;
 public class EnvironmentWithGUI extends Environment {
     
     private WorldGUI gui;
-    private static final int DELAY_MS = 5; 
+    private static final int DELAY_MS = 10; 
     private boolean guiInitialized = false;
     
     public EnvironmentWithGUI(World world, Position initialAgentPos, Position goalPos) {
@@ -25,7 +25,7 @@ public class EnvironmentWithGUI extends Environment {
         this.guiInitialized = true;
         
         // Initialization
-        gui.updateEnergy(0);
+        // gui.updateEnergy(0);
         Logger.info("GUI initialized");
     }
     
@@ -55,7 +55,7 @@ public class EnvironmentWithGUI extends Environment {
     private void updateGUI() {
         if (gui != null && guiInitialized) {
             gui.updateAgentPosition(getAgentPosition());
-            gui.updateEnergy(getSpentEnergy());
+            // gui.updateEnergy(getSpentEnergy());
         }
     }
     
@@ -74,5 +74,10 @@ public class EnvironmentWithGUI extends Environment {
         if (guiInitialized && gui != null) {
             gui.updateGoalPosition(newGoal);
         }
+    }
+    
+    // Returns the GUI instance for message display
+    public WorldGUI getGUI() {
+       return this.gui;
     }
 }
