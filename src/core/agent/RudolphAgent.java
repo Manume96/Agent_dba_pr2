@@ -23,15 +23,25 @@ public class RudolphAgent extends Agent {
 	protected void setup() {
 		Logger.info("Rudolph starting...");
 
-		// Inicializar mapa de renos a posiciones
-		positions.put(ReindeerName.DASHER, new Position(20, 20));
-		positions.put(ReindeerName.DANCER, new Position(30, 40));
-		positions.put(ReindeerName.VIXEN, new Position(15, 60));
-		positions.put(ReindeerName.PRANCER, new Position(80, 10));
-		positions.put(ReindeerName.CUPID, new Position(12, 75));
-		positions.put(ReindeerName.COMET, new Position(5, 5));
-		positions.put(ReindeerName.BLITZEN, new Position(60, 60));
-		positions.put(ReindeerName.DONNER, new Position(70, 25));
+                // Mapa sin obstáculos
+		//positions.put(ReindeerName.DASHER, new Position(5, 7));
+		//positions.put(ReindeerName.DANCER, new Position(11, 71));
+		//positions.put(ReindeerName.VIXEN, new Position(23, 39));
+		//positions.put(ReindeerName.PRANCER, new Position(42, 61));
+		//positions.put(ReindeerName.CUPID, new Position(46, 17));
+		//positions.put(ReindeerName.COMET, new Position(59, 39));
+		//positions.put(ReindeerName.BLITZEN, new Position(86, 84));
+		//positions.put(ReindeerName.DONNER, new Position(90, 4));
+                
+		// Mapa con obstáculos
+		positions.put(ReindeerName.DASHER, new Position(11, 12));
+		positions.put(ReindeerName.DANCER, new Position(19, 41));
+		positions.put(ReindeerName.VIXEN, new Position(41, 60));
+		positions.put(ReindeerName.PRANCER, new Position(52, 33));
+		positions.put(ReindeerName.CUPID, new Position(63, 34));
+		positions.put(ReindeerName.COMET, new Position(66, 56));
+		positions.put(ReindeerName.BLITZEN, new Position(92, 74));
+		positions.put(ReindeerName.DONNER, new Position(95, 10));
 
 		// Llenar la cola
 		queue.add(ReindeerName.DASHER);
