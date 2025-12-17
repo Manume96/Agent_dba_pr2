@@ -310,11 +310,49 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
             case 7: // Check if goal reached
                 if (hasFinished()) {
                     Logger.info("Reached target position of current reindeer: " + targetPosition);
-                    searchStep = 2; // Volver a pedir la posición del siguiente reno
+                    searchStep = 8; // Volver a pedir la posición del siguiente reno
                 } else {
                     searchStep = 4; // Continuar el ciclo perceive->think->execute
                 }
                 break;
+                
+            case 8: // Pedir traduccion
+                content = messageProtocol.createMessageBody(ContentKeyword.FOUND_REINDEER.getText());
+                msg = messageProtocol.createMessage(ACLMessage.REQUEST, AgentName.TRANSLATOR, content,
+                        ConversationId.TRANSLATION);
+                myAgent.send(msg);
+                searchStep = 9;
+                Logger.info("Solicitando traducción para: " + content);
+                break;
+                
+            case 9: // Esperar traduccion
+                msg = myAgent.blockingReceive();
+                if (msg != null && ConversationId.TRANSLATION.getId().equals(msg.getConversationId())
+                        && msg.getPerformative() == ACLMessage.INFORM) {
+                    translatedText = messageProtocol.extractMessageBody(msg);
+                    Logger.info("Traducción recibida: " + translatedText);
+                    searchStep = 10;
+                } else {
+                    Logger.warn("Unexpected message while waiting translation: " + msg);
+                    currentPhase = Phase.REPORT;
+                    searchStep = 0;
+                }
+                break;
+                
+            case 10: // Enviar mensaje traducido a Santa
+                if (translatedText == null) {
+                    Logger.error("No translated text available to inform to Santa");
+                    currentPhase = Phase.REPORT;
+                    searchStep = 0;
+                    break;
+                }
+                msg = messageProtocol.createMessage(ACLMessage.INFORM, AgentName.SANTA, translatedText,
+                        ConversationId.REPORT);
+                myAgent.send(msg);
+                Logger.info("Mensaje enviado a Santa: " + translatedText);
+                searchStep = 2; // Buscar al siguiente reno
+                break;
+                
             default:
                 searchStep = 0;
                 break;
