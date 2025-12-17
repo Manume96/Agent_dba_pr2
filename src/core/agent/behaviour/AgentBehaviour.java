@@ -274,11 +274,14 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                     if (rudolphResponse instanceof Position position) {
                         targetPosition = position;
                         proxy.setGoalPosition(targetPosition);
+                        String positionMsg = "Position: (" + targetPosition.getX() + ", " + targetPosition.getY() + ")";
+                        displayMessageWithDelay("Rudolph", positionMsg, "Agent");
                         Logger.info("Received Position from Rudolph: " + targetPosition);
                         searchStep = 4; // seguir con movimiento
                     } else {
                         String body = msg.getContent(); // si ALL_FOUND
                         if (ContentKeyword.ALL_FOUND.getText().equals(body)) {
+                            displayMessageWithDelay("Rudolph", msg.getContent(), "Agent");
                             Logger.info("Rudolph reports ALL_FOUND. Switching to REPORT phase.");
                         } else {
                             Logger.warn("Unexpected content from Rudolph: " + body);
@@ -391,6 +394,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                     msg.setContent(translatedText);
                     msg.setConversationId(ConversationId.REPORT.getId());
                     myAgent.send(msg);
+                    displayMessageWithDelay("Agent", msg.getContent(), "Santa");
                     Logger.info("Replied to Santa with QUERY_REF (using lastSantaMessage).");
                 } else {
                     msg = messageProtocol.createMessage(ACLMessage.QUERY_REF, AgentName.SANTA, translatedText,
@@ -406,8 +410,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 msg = myAgent.blockingReceive();
                 recordLastMessage(msg);
                 if (msg != null && ConversationId.REPORT.getId().equals(msg.getConversationId())
-                        && msg.getPerformative() == ACLMessage.INFORM) {
-                    proxy.displayMessage("Santa", lastSantaMessage.getContent(), "Agent");
+                        && msg.getPerformative() == ACLMessage.INFORM) {;
                     displayMessageWithDelay("Santa", lastSantaMessage.getContent(), "Agent");
                     Logger.info("Santa replied: " + lastSantaMessage.getContent());
                     reportStep = 4;
@@ -419,7 +422,6 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                         lastSantaMessage.getContent(),
                         ConversationId.TRANSLATION);
                 myAgent.send(msg);
-                proxy.displayMessage("Agent", lastSantaMessage.getContent(), "Translator");
                 displayMessageWithDelay("Agent", lastSantaMessage.getContent(), "Translator");
                 Logger.info("Requesting translation of Santa's reply.");
                 reportStep = 5;
@@ -502,6 +504,7 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                     inform.setContent(translatedText);
                     inform.setConversationId(ConversationId.REPORT.getId());
                     myAgent.send(inform);
+                    displayMessageWithDelay("Agent", inform.getContent(), "Santa");
                     Logger.info("Replied to Santa informing arrival.");
                 } else {
                     msg = messageProtocol.createMessage(ACLMessage.INFORM, AgentName.SANTA, translatedText,
