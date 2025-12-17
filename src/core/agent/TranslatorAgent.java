@@ -6,6 +6,9 @@ import jade.lang.acl.ACLMessage;
 import core.agent.communication.MessageProtocol;
 import core.agent.communication.TranslatorMessageProtocol;
 import core.logger.Logger;
+import jade.lang.acl.MessageTemplate;
+import core.agent.communication.AgentName;
+import core.agent.communication.ConversationId;
 
 public class TranslatorAgent extends Agent {
 
@@ -21,7 +24,14 @@ public class TranslatorAgent extends Agent {
 
         @Override
         public void action() {
-            ACLMessage msg = blockingReceive();
+            MessageTemplate template = MessageTemplate.and(
+                    MessageTemplate.and(
+                            MessageTemplate.MatchConversationId(ConversationId.TRANSLATION.getId()),
+                            MessageTemplate.MatchPerformative(ACLMessage.REQUEST)
+                    ),
+                    MessageTemplate.MatchSender(AgentName.AGENT.toAID())
+            );
+            ACLMessage msg = blockingReceive(template);
             if (msg != null) {
                 Logger.info("Translator received: " + msg.getContent());
                 ACLMessage reply = ((TranslatorMessageProtocol) messageProtocol).createReplyMessage(msg);

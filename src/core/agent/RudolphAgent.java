@@ -7,6 +7,8 @@ import core.agent.communication.ReindeerName;
 import core.agent.communication.ContentKeyword;
 import core.logger.Logger;
 import core.world.Position;
+import jade.lang.acl.MessageTemplate;
+import core.agent.communication.AgentName;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -56,7 +58,17 @@ public class RudolphAgent extends Agent {
 		addBehaviour(new CyclicBehaviour() {
 			@Override
 			public void action() {
-				ACLMessage msg = blockingReceive();
+                                MessageTemplate template = MessageTemplate.and(
+                                    MessageTemplate.and(
+                                            MessageTemplate.MatchConversationId(expectedCode),
+                                            MessageTemplate.or(
+                                                    MessageTemplate.MatchPerformative(ACLMessage.PROPOSE),
+                                                    MessageTemplate.MatchPerformative(ACLMessage.QUERY_REF)
+                                            )
+                                    ),
+                                    MessageTemplate.MatchSender(AgentName.AGENT.toAID())
+                                    );
+				ACLMessage msg = blockingReceive(template);
 				if (msg != null) {
 					handleMessage(msg);
 				} else {

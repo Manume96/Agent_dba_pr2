@@ -113,10 +113,16 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 break;
 
             case 1: // Recibir la traducción del Traductor
-                msg = myAgent.blockingReceive();
+                MessageTemplate template = MessageTemplate.and(
+                        MessageTemplate.and(
+                                MessageTemplate.MatchConversationId(ConversationId.TRANSLATION.getId()),
+                                MessageTemplate.MatchPerformative(ACLMessage.INFORM)
+                        ),
+                        MessageTemplate.MatchSender(AgentName.TRANSLATOR.toAID())
+                );
+                msg = myAgent.blockingReceive(template);
                 recordLastMessage(msg);
-                if (msg != null && ConversationId.TRANSLATION.getId().equals(msg.getConversationId())
-                        && msg.getPerformative() == ACLMessage.INFORM) {
+                if (msg != null) {
                     translatedText = messageProtocol.extractMessageBody(msg);
                     displayMessageWithDelay("Translator", translatedText, "Agent");
                     Logger.info("Traducción recibida: " + translatedText);
@@ -139,9 +145,13 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 break;
 
             case 3: // Esperar respuesta de Santa (ACCEPT/REJECT)
-                msg = myAgent.blockingReceive();
+                template = MessageTemplate.and(
+                        MessageTemplate.MatchConversationId(ConversationId.AUTHORIZATION.getId()),
+                        MessageTemplate.MatchSender(AgentName.SANTA.toAID())
+                );
+                msg = myAgent.blockingReceive(template);
                 recordLastMessage(msg);
-                if (msg != null && ConversationId.AUTHORIZATION.getId().equals(msg.getConversationId())) {
+                if (msg != null) {
                     if (msg.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
                         displayMessageWithDelay("Santa", lastSantaMessage.getContent(), "Agent");
                         Logger.info("Santa accepted. Will request translation in next step.");
@@ -166,10 +176,16 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 break;
 
             case 5: // Esperar la respuesta con el código extraido
-                msg = myAgent.blockingReceive();
+                template = MessageTemplate.and(
+                        MessageTemplate.and(
+                                MessageTemplate.MatchConversationId(ConversationId.TRANSLATION.getId()),
+                                MessageTemplate.MatchPerformative(ACLMessage.INFORM)
+                        ),
+                        MessageTemplate.MatchSender(AgentName.TRANSLATOR.toAID())
+                );
+                msg = myAgent.blockingReceive(template);
                 recordLastMessage(msg);
-                if (msg != null && ConversationId.TRANSLATION.getId().equals(msg.getConversationId())
-                        && msg.getPerformative() == ACLMessage.INFORM) {
+                if (msg != null) {
                     String translated = msg.getContent();
                     displayMessageWithDelay("Translator", translated, "Agent");
                     Logger.info("Received translation from Translator: " + translated);
@@ -223,8 +239,12 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 break;
 
             case 1: // recibir respuesta ACCEPT/REJECT de Rudolph
-                msg = myAgent.blockingReceive();
-                if (msg != null && secretCode.equals(msg.getConversationId())) {
+                MessageTemplate template = MessageTemplate.and(
+                        MessageTemplate.MatchConversationId(secretCode),
+                        MessageTemplate.MatchSender(AgentName.RUDOLPH.toAID())
+                );
+                msg = myAgent.blockingReceive(template);
+                if (msg != null) {
                     if (msg.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
                         displayMessageWithDelay("Rudolph", "Accepted", "Agent");
                         Logger.info("Rudolph accepted proposal");
@@ -259,40 +279,42 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 break;
 
             case 3: // Recibir respuesta de Rudolph
-                msg = myAgent.blockingReceive();
+                template = MessageTemplate.and(
+                        MessageTemplate.and(
+                                MessageTemplate.MatchConversationId(secretCode),
+                                MessageTemplate.MatchPerformative(ACLMessage.INFORM)
+                        ),
+                        MessageTemplate.MatchSender(AgentName.RUDOLPH.toAID())
+                );
+                msg = myAgent.blockingReceive(template);
                 recordLastMessage(msg);
 
-                if (msg == null || !secretCode.equals(msg.getConversationId())) {
-                    Logger.warn("Unexpected message while waiting Rudolph position: " + msg);
-                    currentPhase = Phase.REPORT;
-                    searchStep = 0;
-                    break;
-                }
-
-                try {
-                    Object rudolphResponse = msg.getContentObject(); // puede lanzar UnreadableException
-                    if (rudolphResponse instanceof Position position) {
-                        targetPosition = position;
-                        proxy.setGoalPosition(targetPosition);
-                        String positionMsg = "Position: (" + targetPosition.getX() + ", " + targetPosition.getY() + ")";
-                        displayMessageWithDelay("Rudolph", positionMsg, "Agent");
-                        Logger.info("Received Position from Rudolph: " + targetPosition);
-                        searchStep = 4; // seguir con movimiento
-                    } else {
-                        String body = msg.getContent(); // si ALL_FOUND
-                        if (ContentKeyword.ALL_FOUND.getText().equals(body)) {
-                            displayMessageWithDelay("Rudolph", msg.getContent(), "Agent");
-                            Logger.info("Rudolph reports ALL_FOUND. Switching to REPORT phase.");
+                if (msg != null) {
+                    try {
+                        Object rudolphResponse = msg.getContentObject(); // puede lanzar UnreadableException
+                        if (rudolphResponse instanceof Position position) {
+                            targetPosition = position;
+                            proxy.setGoalPosition(targetPosition);
+                            String positionMsg = "Position: (" + targetPosition.getX() + ", " + targetPosition.getY() + ")";
+                            displayMessageWithDelay("Rudolph", positionMsg, "Agent");
+                            Logger.info("Received Position from Rudolph: " + targetPosition);
+                            searchStep = 4; // seguir con movimiento
                         } else {
-                            Logger.warn("Unexpected content from Rudolph: " + body);
+                            String body = msg.getContent(); // si ALL_FOUND
+                            if (ContentKeyword.ALL_FOUND.getText().equals(body)) {
+                                displayMessageWithDelay("Rudolph", msg.getContent(), "Agent");
+                                Logger.info("Rudolph reports ALL_FOUND. Switching to REPORT phase.");
+                            } else {
+                                Logger.warn("Unexpected content from Rudolph: " + body);
+                            }
+                            currentPhase = Phase.REPORT;
+                            searchStep = 0;
                         }
+                    } catch (Exception e) {
+                        Logger.warn("Failed to read Rudolph's content: " + e);
                         currentPhase = Phase.REPORT;
                         searchStep = 0;
                     }
-                } catch (Exception e) {
-                    Logger.warn("Failed to read Rudolph's content: " + e);
-                    currentPhase = Phase.REPORT;
-                    searchStep = 0;
                 }
                 break;
 
@@ -329,9 +351,15 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 break;
                 
             case 9: // Esperar traduccion
-                msg = myAgent.blockingReceive();
-                if (msg != null && ConversationId.TRANSLATION.getId().equals(msg.getConversationId())
-                        && msg.getPerformative() == ACLMessage.INFORM) {
+                template = MessageTemplate.and(
+                        MessageTemplate.and(
+                                MessageTemplate.MatchConversationId(ConversationId.TRANSLATION.getId()),
+                                MessageTemplate.MatchPerformative(ACLMessage.INFORM)
+                        ),
+                        MessageTemplate.MatchSender(AgentName.TRANSLATOR.toAID())
+                );
+                msg = myAgent.blockingReceive(template);
+                if (msg != null) {
                     translatedText = messageProtocol.extractMessageBody(msg);
                     Logger.info("Traducción recibida: " + translatedText);
                     searchStep = 10;
@@ -378,8 +406,15 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 break;
 
             case 1: // Respuesta del Traductor
-                msg = myAgent.blockingReceive();
-                if (msg != null && msg.getPerformative() == ACLMessage.INFORM) {
+                MessageTemplate template = MessageTemplate.and(
+                        MessageTemplate.and(
+                                MessageTemplate.MatchConversationId(ConversationId.TRANSLATION.getId()),
+                                MessageTemplate.MatchPerformative(ACLMessage.INFORM)
+                        ),
+                        MessageTemplate.MatchSender(AgentName.TRANSLATOR.toAID())
+                );
+                msg = myAgent.blockingReceive(template);
+                if (msg != null) {
                     translatedText = msg.getContent();
                     displayMessageWithDelay("Translator", translatedText, "Agent");
                     Logger.info("Translation received: " + translatedText);
@@ -407,10 +442,16 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 break;
 
             case 3: // Respuesta de santa
-                msg = myAgent.blockingReceive();
+                template = MessageTemplate.and(
+                        MessageTemplate.and(
+                                MessageTemplate.MatchConversationId(ConversationId.REPORT.getId()),
+                                MessageTemplate.MatchPerformative(ACLMessage.INFORM)
+                        ),
+                        MessageTemplate.MatchSender(AgentName.SANTA.toAID())
+                );
+                msg = myAgent.blockingReceive(template);
                 recordLastMessage(msg);
-                if (msg != null && ConversationId.REPORT.getId().equals(msg.getConversationId())
-                        && msg.getPerformative() == ACLMessage.INFORM) {;
+                if (msg != null) {
                     displayMessageWithDelay("Santa", lastSantaMessage.getContent(), "Agent");
                     Logger.info("Santa replied: " + lastSantaMessage.getContent());
                     reportStep = 4;
@@ -427,8 +468,15 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 reportStep = 5;
                 break;
             case 5: // Esperando la respuesta del traductor
-                msg = myAgent.blockingReceive();
-                if (msg != null && msg.getPerformative() == ACLMessage.INFORM) {
+                template = MessageTemplate.and(
+                        MessageTemplate.and(
+                                MessageTemplate.MatchConversationId(ConversationId.TRANSLATION.getId()),
+                                MessageTemplate.MatchPerformative(ACLMessage.INFORM)
+                        ),
+                        MessageTemplate.MatchSender(AgentName.TRANSLATOR.toAID())
+                );
+                msg = myAgent.blockingReceive(template);
+                if (msg != null) {
                     String val = msg.getContent(); // "Bro Position:(10,10) En Plan"
                     displayMessageWithDelay("Translator", val, "Agent");
                     Logger.info("Phase 3: Translated position message: " + val);
@@ -487,8 +535,15 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 break;
 
             case 10: // Esperando la traducción
-                msg = myAgent.blockingReceive();
-                if (msg != null && msg.getPerformative() == ACLMessage.INFORM) {
+                template = MessageTemplate.and(
+                        MessageTemplate.and(
+                                MessageTemplate.MatchConversationId(ConversationId.TRANSLATION.getId()),
+                                MessageTemplate.MatchPerformative(ACLMessage.INFORM)
+                        ),
+                        MessageTemplate.MatchSender(AgentName.TRANSLATOR.toAID())
+                );
+                msg = myAgent.blockingReceive(template);
+                if (msg != null) {
                     translatedText = msg.getContent();
                     displayMessageWithDelay("Translator", translatedText, "Agent");
                     Logger.info("Translation received: " + translatedText);
@@ -517,7 +572,11 @@ public class AgentBehaviour extends Behaviour implements AgentBrain {
                 break;
 
             case 12:
-                msg = myAgent.blockingReceive();
+                template = MessageTemplate.and(
+                        MessageTemplate.MatchConversationId(ConversationId.REPORT.getId()),
+                        MessageTemplate.MatchSender(AgentName.SANTA.toAID())
+                );
+                msg = myAgent.blockingReceive(template);
                 recordLastMessage(msg);
                 if (msg != null) {
                     if (msg.getContent().contains(ContentKeyword.HO_HO_HO.getText())) {

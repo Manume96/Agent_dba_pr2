@@ -9,6 +9,9 @@ import core.agent.communication.SantaMessageProtocol;
 import core.logger.Logger;
 import core.world.Position;
 import java.util.Random;
+import jade.lang.acl.MessageTemplate;
+import core.agent.communication.AgentName;
+import core.agent.communication.ConversationId;
 
 public class SantaAgent extends Agent {
     
@@ -24,7 +27,23 @@ public class SantaAgent extends Agent {
         addBehaviour(new CyclicBehaviour() {
             @Override
             public void action() {
-                ACLMessage msg = blockingReceive();
+                MessageTemplate template = MessageTemplate.and(
+                        MessageTemplate.or(
+                                MessageTemplate.MatchConversationId(ConversationId.AUTHORIZATION.getId()),
+                                MessageTemplate.MatchConversationId(ConversationId.REPORT.getId())
+                        ),
+                        MessageTemplate.and(
+                                MessageTemplate.MatchSender(AgentName.AGENT.toAID()),
+                                MessageTemplate.or(
+                                        MessageTemplate.MatchPerformative(ACLMessage.PROPOSE),
+                                        MessageTemplate.or(
+                                                MessageTemplate.MatchPerformative(ACLMessage.QUERY_REF),
+                                                MessageTemplate.MatchPerformative(ACLMessage.INFORM)
+                                        )
+                                )
+                        )
+                );
+                ACLMessage msg = blockingReceive(template);
                 if (msg != null) {
                     String senderName = (msg.getSender() != null) ? msg.getSender().getLocalName() : "unknown";
                     Logger.info("Santa received message from " + senderName + " | perf=" + msg.getPerformative()
